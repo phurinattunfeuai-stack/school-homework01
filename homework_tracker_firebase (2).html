@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ระบบเช็คงานนักเรียน</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f8f7f4;--surface:#fff;--surface2:#f1efe8;--border:#e0ddd4;
+  --text:#1a1a18;--text2:#5f5e5a;--text3:#888780;
+  --purple:#534ab7;--purple-light:#eeedfe;--purple-dark:#3c3489;
+  --teal:#0f6e56;--teal-light:#e1f5ee;
+  --amber:#ba7517;--amber-light:#faeeda;
+  --red:#a32d2d;--red-light:#fcebeb;
+  --blue:#185fa5;--blue-light:#e6f1fb;
+  --radius:8px;--radius-lg:12px;
+}
+body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+.app{display:grid;grid-template-columns:220px 1fr;min-height:100vh}
+.sidebar{background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column}
+.sidebar-logo{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.logo-icon{width:32px;height:32px;background:var(--purple);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px}
+.logo-text{font-size:15px;font-weight:600}
+.logo-sub{font-size:11px;color:var(--text3);margin-top:1px}
+.nav{padding:12px 10px;flex:1}
+.nav-section{font-size:11px;font-weight:500;color:var(--text3);padding:8px 10px 4px;letter-spacing:.5px}
+.nav-item{display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:var(--radius);cursor:pointer;font-size:14px;color:var(--text2);margin-bottom:2px;transition:all .15s;border:none;background:none;width:100%;text-align:left}
+.nav-item:hover{background:var(--surface2);color:var(--text)}
+.nav-item.active{background:var(--purple-light);color:var(--purple);font-weight:500}
+.nav-item i{font-size:17px;width:20px;text-align:center}
+.nav-badge{margin-left:auto;background:var(--purple);color:#fff;font-size:11px;padding:1px 7px;border-radius:20px;min-width:20px;text-align:center}
+.sync-status{padding:12px 16px;border-top:1px solid var(--border);font-size:12px;color:var(--text3);display:flex;align-items:center;gap:6px}
+.sync-dot{width:7px;height:7px;border-radius:50%;background:#ccc;flex-shrink:0}
+.sync-dot.ok{background:#1d9e75}
+.sync-dot.err{background:#e24b4a}
+.sync-dot.loading{background:#ef9f27;animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.main{display:flex;flex-direction:column;overflow:hidden}
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:12px 20px;display:flex;align-items:center;gap:12px}
+.topbar h1{font-size:17px;font-weight:500;flex:1}
+.btn{padding:8px 16px;border-radius:var(--radius);border:.5px solid var(--border);cursor:pointer;font-size:14px;font-family:inherit;font-weight:500;background:var(--surface);color:var(--text);transition:all .15s;display:inline-flex;align-items:center;gap:6px}
+.btn:hover{background:var(--surface2)}
+.btn-primary{background:var(--purple);color:#fff;border-color:var(--purple)}
+.btn-primary:hover{background:var(--purple-dark)}
+.btn-success{background:var(--teal-light);color:var(--teal);border-color:#9fe1cb}
+.btn-danger{background:var(--red-light);color:var(--red);border-color:#f7c1c1}
+.btn-sm{padding:5px 12px;font-size:13px}
+.content{flex:1;overflow-y:auto;padding:20px}
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px 16px}
+.stat-label{font-size:12px;color:var(--text3);margin-bottom:4px}
+.stat-val{font-size:26px;font-weight:600}
+.stat-sub{font-size:12px;color:var(--text3);margin-top:2px}
+.stat-card.purple .stat-val{color:var(--purple)}
+.stat-card.teal .stat-val{color:var(--teal)}
+.stat-card.amber .stat-val{color:var(--amber)}
+.stat-card.red .stat-val{color:var(--red)}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:16px}
+.card-header{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.card-title{font-size:15px;font-weight:500;flex:1}
+table{width:100%;border-collapse:collapse}
+th{padding:10px 14px;text-align:left;font-size:12px;font-weight:500;color:var(--text3);background:var(--surface2);border-bottom:1px solid var(--border)}
+td{padding:10px 14px;font-size:14px;border-bottom:.5px solid var(--border)}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#fafaf8}
+.hw-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:500}
+.badge-done{background:var(--teal-light);color:var(--teal)}
+.badge-miss{background:var(--red-light);color:var(--red)}
+.room-pill{padding:2px 10px;border-radius:20px;font-size:12px;font-weight:500}
+input,select,textarea{padding:8px 12px;border:.5px solid var(--border);border-radius:var(--radius);font-size:14px;font-family:inherit;background:var(--surface);color:var(--text);outline:none;transition:border .15s;width:100%}
+input:focus,select:focus{border-color:var(--purple)}
+label{font-size:13px;font-weight:500;color:var(--text2);display:block;margin-bottom:4px}
+.form-group{margin-bottom:14px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;align-items:center;justify-content:center;z-index:100}
+.modal-overlay.show{display:flex}
+.modal{background:var(--surface);border-radius:var(--radius-lg);padding:24px;width:480px;max-width:95vw;max-height:85vh;overflow-y:auto}
+.modal-header{display:flex;align-items:center;gap:10px;margin-bottom:18px}
+.modal-title{font-size:17px;font-weight:500;flex:1}
+.modal-footer{display:flex;justify-content:flex-end;gap:8px;margin-top:18px;padding-top:14px;border-top:1px solid var(--border)}
+.scan-area{background:var(--surface2);border-radius:var(--radius-lg);padding:20px;text-align:center;min-height:260px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;border:2px dashed var(--border)}
+.scan-result{background:var(--teal-light);border:1px solid #9fe1cb;border-radius:var(--radius-lg);padding:16px;text-align:center;display:none;margin-top:16px}
+.scan-result .sname{font-size:18px;font-weight:600;color:var(--teal)}
+.scan-flash{animation:flash .5s ease}
+@keyframes flash{0%{background:#d4f5e9}100%{background:var(--teal-light)}}
+.qr-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.qr-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:12px;display:flex;flex-direction:column;align-items:center;gap:7px;text-align:center}
+.qr-wrap{width:110px;height:110px;display:flex;align-items:center;justify-content:center}
+.filters{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.filters select,.filters input{width:auto;flex:0 1 auto}
+.hw-list{display:flex;flex-direction:column;gap:8px}
+.hw-item{background:var(--surface2);border-radius:var(--radius);padding:12px 14px;display:flex;align-items:center;gap:10px}
+.hw-info{flex:1}
+.hw-name{font-size:14px;font-weight:500}
+.hw-meta{font-size:12px;color:var(--text3);margin-top:2px}
+.progress-bar{height:6px;background:#e8e6e0;border-radius:3px;overflow:hidden;width:100px;flex-shrink:0}
+.progress-fill{height:100%;background:var(--teal);border-radius:3px}
+.toast{position:fixed;bottom:24px;right:24px;background:var(--text);color:#fff;padding:12px 18px;border-radius:var(--radius);font-size:14px;z-index:200;display:none;animation:slideUp .3s ease}
+@keyframes slideUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.toast.show{display:block}
+.loading{text-align:center;padding:40px;color:var(--text3);font-size:14px}
+.spinner{width:24px;height:24px;border:2px solid var(--border);border-top-color:var(--purple);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 10px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.page{display:none}
+.page.active{display:block}
+@media print{
+  .sidebar,.topbar,.filters,.btn,.modal-overlay{display:none!important}
+  .qr-grid{grid-template-columns:repeat(4,1fr)}
+  .qr-card{break-inside:avoid}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon"><i class="ti ti-school"></i></div>
+      <div>
+        <div class="logo-text">เช็คงาน</div>
+        <div class="logo-sub">school-homework</div>
+      </div>
+    </div>
+    <nav class="nav">
+      <div class="nav-section">หลัก</div>
+      <button class="nav-item active" onclick="showPage('dashboard')"><i class="ti ti-layout-dashboard"></i> ภาพรวม</button>
+      <button class="nav-item" onclick="showPage('scan')"><i class="ti ti-scan"></i> สแกน QR <span class="nav-badge" id="today-count">0</span></button>
+      <button class="nav-item" onclick="showPage('assignments')"><i class="ti ti-clipboard-list"></i> งาน/การบ้าน</button>
+      <button class="nav-item" onclick="showPage('students')"><i class="ti ti-users"></i> นักเรียน</button>
+      <div class="nav-section">เครื่องมือ</div>
+      <button class="nav-item" onclick="showPage('qrcards')"><i class="ti ti-qrcode"></i> บัตร QR</button>
+      <button class="nav-item" onclick="showPage('report')"><i class="ti ti-chart-bar"></i> รายงาน</button>
+    </nav>
+    <div class="sync-status">
+      <div class="sync-dot loading" id="sync-dot"></div>
+      <span id="sync-text">กำลังเชื่อมต่อ...</span>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <h1 id="page-title">ภาพรวม</h1>
+    </div>
+    <div class="content">
+
+      <!-- DASHBOARD -->
+      <div class="page active" id="page-dashboard">
+        <div class="stats-grid">
+          <div class="stat-card purple"><div class="stat-label">งานทั้งหมด</div><div class="stat-val" id="stat-total-hw">0</div><div class="stat-sub">รายการ</div></div>
+          <div class="stat-card teal"><div class="stat-label">ส่งแล้ววันนี้</div><div class="stat-val" id="stat-today">0</div><div class="stat-sub">ครั้ง</div></div>
+          <div class="stat-card amber"><div class="stat-label">นักเรียนทั้งหมด</div><div class="stat-val">179</div><div class="stat-sub">5 ห้องเรียน</div></div>
+          <div class="stat-card red"><div class="stat-label">ยังไม่ส่ง (รวม)</div><div class="stat-val" id="stat-missing">0</div><div class="stat-sub">รายการ</div></div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <i class="ti ti-clipboard-list" style="color:var(--purple)"></i>
+            <span class="card-title">งานล่าสุด</span>
+            <button class="btn btn-sm btn-primary" onclick="showPage('assignments');showAddHW()"><i class="ti ti-plus"></i> เพิ่มงาน</button>
+          </div>
+          <div id="dash-hw-list"><div class="loading"><div class="spinner"></div>กำลังโหลด...</div></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><i class="ti ti-clock" style="color:var(--teal)"></i><span class="card-title">การส่งงานล่าสุด</span></div>
+          <div id="dash-recent"><div class="loading"><div class="spinner"></div>กำลังโหลด...</div></div>
+        </div>
+      </div>
+
+      <!-- SCAN -->
+      <div class="page" id="page-scan">
+        <div style="max-width:540px;margin:0 auto">
+          <div class="form-group">
+            <label>เลือกงาน/การบ้านที่ต้องการเช็ค</label>
+            <select id="scan-hw-select"><option value="">-- เลือกงาน --</option></select>
+          </div>
+          <div class="scan-area" id="scan-area">
+            <i class="ti ti-qrcode" style="font-size:48px;color:var(--text3)"></i>
+            <div style="color:var(--text3);font-size:14px">กดปุ่มเพื่อเริ่มสแกน QR บัตรนักเรียน</div>
+            <button class="btn btn-primary" onclick="startScan()"><i class="ti ti-scan"></i> เริ่มสแกน</button>
+          </div>
+          <div id="scanner-container" style="display:none;margin-top:12px">
+            <div style="max-width:400px;margin:0 auto">
+              <div id="qr-reader"></div>
+            </div>
+            <div style="text-align:center;margin-top:10px">
+              <button class="btn btn-danger btn-sm" onclick="stopScan()"><i class="ti ti-x"></i> หยุดสแกน</button>
+            </div>
+          </div>
+          <div class="scan-result" id="scan-result">
+            <div style="font-size:28px;margin-bottom:6px">✅</div>
+            <div class="sname" id="scan-name">—</div>
+            <div style="font-size:13px;color:var(--teal-dark)" id="scan-room">—</div>
+            <div style="font-size:13px;color:var(--teal);margin-top:4px" id="scan-hw-name">—</div>
+          </div>
+          <div id="scan-log" style="margin-top:16px"></div>
+        </div>
+      </div>
+
+      <!-- ASSIGNMENTS -->
+      <div class="page" id="page-assignments">
+        <div style="display:flex;justify-content:flex-end;margin-bottom:16px">
+          <button class="btn btn-primary" onclick="showAddHW()"><i class="ti ti-plus"></i> เพิ่มงานใหม่</button>
+        </div>
+        <div id="hw-list-container"><div class="loading"><div class="spinner"></div>กำลังโหลด...</div></div>
+      </div>
+
+      <!-- STUDENTS -->
+      <div class="page" id="page-students">
+        <div class="filters">
+          <select id="filter-room" onchange="renderStudents()">
+            <option value="">ทุกห้อง</option>
+            <option>ป.4/1</option><option>ป.4/2</option><option>ป.5/1</option><option>ป.5/2</option><option>ม.1</option>
+          </select>
+          <input type="text" id="filter-name" placeholder="ค้นหาชื่อ..." oninput="renderStudents()" style="width:180px">
+          <select id="filter-hw-student" onchange="renderStudents()">
+            <option value="">เช็คงาน (เลือกงาน)</option>
+          </select>
+          <span style="margin-left:auto;font-size:13px;color:var(--text3)" id="student-count-badge"></span>
+        </div>
+        <div class="card">
+          <div id="students-table-wrap"><div class="loading"><div class="spinner"></div>กำลังโหลด...</div></div>
+        </div>
+      </div>
+
+      <!-- QR CARDS -->
+      <div class="page" id="page-qrcards">
+        <div class="filters">
+          <select id="qr-filter-room" onchange="renderQRCards()">
+            <option value="">ทุกห้อง</option>
+            <option>ป.4/1</option><option>ป.4/2</option><option>ป.5/1</option><option>ป.5/2</option><option>ม.1</option>
+          </select>
+          <input type="text" id="qr-search" placeholder="ค้นหา..." oninput="renderQRCards()" style="width:160px">
+          <button class="btn" onclick="window.print()"><i class="ti ti-printer"></i> พิมพ์</button>
+        </div>
+        <div class="qr-grid" id="qr-grid"></div>
+      </div>
+
+      <!-- REPORT -->
+      <div class="page" id="page-report">
+        <div class="filters">
+          <select id="report-hw" onchange="renderReport()"><option value="">เลือกงาน</option></select>
+          <select id="report-room" onchange="renderReport()">
+            <option value="">ทุกห้อง</option>
+            <option>ป.4/1</option><option>ป.4/2</option><option>ป.5/1</option><option>ป.5/2</option><option>ม.1</option>
+          </select>
+          <select id="report-status" onchange="renderReport()">
+            <option value="">ทุกสถานะ</option>
+            <option value="done">ส่งแล้ว</option>
+            <option value="miss">ยังไม่ส่ง</option>
+          </select>
+        </div>
+        <div id="report-container"></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Modal Add Assignment -->
+<div class="modal-overlay" id="modal-add-hw">
+  <div class="modal">
+    <div class="modal-header">
+      <i class="ti ti-clipboard-list" style="color:var(--purple);font-size:20px"></i>
+      <span class="modal-title">เพิ่มงาน/การบ้าน</span>
+      <button class="btn btn-sm" onclick="closeModal('modal-add-hw')"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="form-group"><label>ชื่องาน *</label><input type="text" id="hw-name" placeholder="เช่น การบ้านหน้า 45-50"></div>
+    <div class="form-row">
+      <div class="form-group"><label>วิชา</label><input type="text" id="hw-subject" placeholder="เช่น คณิตศาสตร์"></div>
+      <div class="form-group"><label>ห้องเรียน</label>
+        <select id="hw-room"><option value="">ทุกห้อง</option><option>ป.4/1</option><option>ป.4/2</option><option>ป.5/1</option><option>ป.5/2</option><option>ม.1</option></select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>วันที่มอบหมาย</label><input type="date" id="hw-date"></div>
+      <div class="form-group"><label>กำหนดส่ง</label><input type="date" id="hw-due"></div>
+    </div>
+    <div class="form-group"><label>หมายเหตุ</label><textarea id="hw-note" rows="2" placeholder="รายละเอียดเพิ่มเติม..."></textarea></div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('modal-add-hw')">ยกเลิก</button>
+      <button class="btn btn-primary" onclick="saveAssignment()"><i class="ti ti-check"></i> บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal HW Detail -->
+<div class="modal-overlay" id="modal-hw-detail">
+  <div class="modal" style="width:600px;max-width:95vw">
+    <div class="modal-header">
+      <i class="ti ti-clipboard-check" style="color:var(--teal);font-size:20px"></i>
+      <span class="modal-title" id="detail-title">รายละเอียดงาน</span>
+      <button class="btn btn-sm" onclick="closeModal('modal-hw-detail')"><i class="ti ti-x"></i></button>
+    </div>
+    <div id="detail-content"></div>
+    <div class="modal-footer">
+      <button class="btn btn-danger btn-sm" onclick="deleteCurrentHW()"><i class="ti ti-trash"></i> ลบงาน</button>
+      <button class="btn" onclick="closeModal('modal-hw-detail')">ปิด</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, set, push, onValue, remove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBCfPx3HgBkNxi-mXEkONzWclwpej-LcHY",
+  authDomain: "school-homework-c56f3.firebaseapp.com",
+  databaseURL: "https://school-homework-c56f3-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "school-homework-c56f3",
+  storageBucket: "school-homework-c56f3.firebasestorage.app",
+  messagingSenderId: "238250259415",
+  appId: "1:238250259415:web:54e6ca6f8805945e2ad192"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+// STUDENTS โหลดจาก Firebase — ถ้า import ยังไม่เคยทำ จะใช้ fallback นี้
+const STUDENTS_FALLBACK = {
+  'ป.4/1':['เด็กหญิงซูหลี วงษ์ธีรธรรม','เด็กหญิงสุภาพร -','เด็กหญิงสุธิมา สิงห์ทุ่งเสือ','เด็กหญิงวัลลิญา ไพรมุกดา','เด็กหญิงวราพร ถาวรพิพัฒน์กุล','เด็กหญิงแพรวพราว -','เด็กหญิงปริยกร เก่งกุญชร','เด็กหญิงนันทิชา -','เด็กหญิงทัดดาว สนธิพรรณ','เด็กหญิงดวงนภา ประกายน้ำ','เด็กหญิงจารุภา โชติรสสกุล','เด็กหญิงเกวลี พิมลศรทอง','เด็กชายศรัณยู มหาตมะคีรี','เด็กชายศรชัย มารยาศรี','เด็กชายวุฒินันท์ ใจเกลียว','เด็กชายฤทธิไกร ใจหยัดยืน','เด็กชายพงศกร โชติรสสกุล','เด็กชายประวิทย์ มหาตมะคีรี','เด็กชายก้องภพ พิมลศรทอง','เด็กชายกษิดิส แสนเกษตรกร','เด็กชายกมล -','เด็กหญิงธนพร -','เด็กหญิงเนาะชากุ -','เด็กหญิงนิตา -','เด็กชายสุภทัต ภูมิรินทร์พลอย','เด็กหญิงจันทร์จิรา วงศ์เจริญ','เด็กชายพงษ์เทพ วรรณวิลาศ','เด็กหญิงฉายสุดา ยุพาสกุล'],
+  'ป.4/2':['เด็กหญิงสุดาพร -','เด็กหญิงอรจิรา รักเผ่าไทย','เด็กหญิงอรจิรา บุญทวีคูณ','เด็กหญิงวริศรา ไพรมุกดา','เด็กหญิงวนิดา โชติรสสกุล','เด็กหญิงพศิกา เก่งกุญชร','เด็กหญิงปฐมพร มณีประกายแก้ว','เด็กหญิงขวัญทิพย์ วรางค์กรณ์ธาดา','เด็กหญิงกิ่งฟ้า พงศ์พนาไพรดอน','เด็กหญิงกัญญารัตน์ -','เด็กหญิงกัณฐมณี ปัญญาจิตเกษม','เด็กหญิงกมลเนตร เอกอุดมรักษ์','เด็กชายเอกชัย -','เด็กชายอาทิตย์ เก่งกุญชร','เด็กชายพีรวัส สิงห์สล้าง','เด็กชายพลาโซซอ -','เด็กชายพรชัย ธนเสรีธรรม','เด็กชายทัตชน ไพรมุกดา','เด็กชายต่าบิ้บิ้ -','เด็กชายณัฐวุฒิ -','เด็กชายฉลองชัย อติโชคกุล','เด็กชายกิตติศักดิ์ คีรีสุเรนทร์','เด็กชายประยุทธ์ มหาตมะคีรี','เด็กชายแอ๊ะตามอ -','เด็กชายซะลีคูเวะ -','เด็กหญิงลลิตา -','เด็กชายกุลกิตต์ วงษ์วิชุดา','เด็กชายณรงค์ชัย วงษ์วิชุดา','เด็กชายพาจอวี -','เด็กชายอัศนี -'],
+  'ป.5/1':['เด็กชายวิทยา พลังพร','เด็กชายศรชัย -','เด็กหญิงดารุณี ครองมรกต','เด็กหญิงนิภาดา โกศลบารมี','เด็กชายพีรพล แก้วพัชรพร','เด็กหญิงเอมิ -','เด็กหญิงกนกรัตน์ ทังสุรชัย','เด็กหญิงญาดา -','เด็กชายสุทิตย์ มาลาคีรีกุล','เด็กหญิงยุวดี ไพรแสงแก้ว','เด็กหญิงอรทัย ไพรแสงแก้ว','เด็กหญิงอรพิชา เจ็ดก้าวมา','เด็กชายภาคิน ดวงสกุลธรรม','เด็กหญิงคุนี -','เด็กชายทรายทราย -','เด็กหญิงสุรีพร เจริญพันธ์โชค','เด็กชายสุวิทย์ วิหคไพร','เด็กหญิงรักษ์พร -','เด็กหญิงดวงใจ คันธมาทน์งาม','เด็กชายดิเรก ไพรมุกดา','เด็กชายสิปปภาส โชติรสสกุล','เด็กหญิงแพรวา -','เด็กชายปรีชา -','เด็กหญิงยุวดี โชติรสสกุล','เด็กชายวุฒิภัทร ไพรมุกดา','เด็กหญิงเพชรลดา ทังสุรชัย','เด็กหญิงนันทิพร นราภัสสร','เด็กชายณรงค์ชัย ประกายน้ำ','เด็กหญิงบะหมี่ -','เด็กหญิงน่อกิ๊กิ -','เด็กหญิงหน่อพอเซ -','เด็กหญิงพอแกละเก่ -','เด็กชายดิ๊โพ -','เด็กหญิงน่อมึญอ -','นายณัฐดนัย -','เด็กหญิงณัฐพร สมศศิภา','เด็กหญิงกันย์สินี แก้วกุมารี'],
+  'ป.5/2':['เด็กชายทินกร -','เด็กหญิงนันทิดา แสงฟ้าใส','เด็กหญิงกิตติญา มานะคีรีกุล','เด็กหญิงทีระพร -','เด็กหญิงหน่อพอทู -','เด็กหญิงแพรวา -','เด็กหญิงวิภาวดี -','เด็กหญิงรินดา -','เด็กหญิงชลธิชา โกศลบารมี','เด็กหญิงสุดา สถิตย์สาละวิน','เด็กชายเกรียงวุฒิ ไพรแสงแก้ว','เด็กหญิงประณาลี ขจรเดชวนา','เด็กหญิงสโรชา -','เด็กหญิงพรวลัย โกศลบารมี','เด็กหญิงกะโย่พอ -','เด็กชายสุวิทย์ ไพรแสงแก้ว','เด็กชายธีรเทพ มานะคีรีกุล','เด็กชายจิรัฏฐ์ มานะคีรีกุล','เด็กหญิงแพรวา -','เด็กหญิงอรนุช พนากรชัย','เด็กชายวาทิต ทัศนะงดงาม','นางสาวน่อเซเคะ -','เด็กชายจอโอะมึ -','เด็กชายน่าโล่ -','เด็กชายจ่อหนี่โท -','เด็กหญิงเหม่แซะอู -','นายจอเซทู -','นายวสันต์ พนากรชัย','เด็กชายกะหนุ -','เด็กชายเกอะปรือทู -','เด็กชายดิ๊โปะโละ -','เด็กหญิงน่อพอซอ -','เด็กชายพงศกร โศจิอรุณ','เด็กหญิงหน่อเชอแอะ -','เด็กชายจิรายุ ฉลองโชคทวี','เด็กหญิงสุพรรณิการ์ นาคาม้วนหาง','เด็กหญิงอนัญญา หงส์ทิพย์สุข','เด็กหญิงพรพิมล สมศศิภา','เด็กชายพสธร -'],
+  'ม.1':['นายเตวิช แสงฟ้าใส','นายดนุเดช เกิดกุนที','เด็กหญิงดารุณี ประกายน้ำ','เด็กชายวีรากร โชติรสสกุล','เด็กชายอาทิตย์ ทังสุรชัย','เด็กหญิงอาลิสา -','เด็กหญิงชนิดา สุริยะวงศ์','เด็กชายทินกร -','เด็กหญิงจารวี วรางค์กรณ์ธาดา','เด็กหญิงวรรณภา เก่งกุญชร','เด็กหญิงจุไรรัตน์ สกุณาเคียงดง','เด็กหญิงอรดา บุญทวีคูณ','เด็กชายสิทธิพันธ์ ฟ้านภาแจ่ม','เด็กหญิงศรัณย์พร ปัญญาจิตเกษม','เด็กชายธนภัทร เก่งกุญชร','เด็กชายปิติ -','เด็กหญิงพฤกษา เครือสาร','เด็กหญิงชมพูนุช อิ่มเอมสวัสดิ์','เด็กหญิงลีลาวดี -','เด็กหญิงลลิตา -','เด็กหญิงนิตา เก่งกุญชร','เด็กชายปิยะ -','เด็กหญิงฐิตาภา ใจหยัดยืน','เด็กหญิงเพชรพลอย -','เด็กหญิงตุลยา -','นายแสงเพชร นาคาม้วนหาง','เด็กหญิงเฟื่องฟ้า -','นางสาวการะเกด -','เด็กหญิงนันทิวา นิ่มละออ','เด็กชายสนธิ -','เด็กหญิงจิดาภา กิตนิทัศน์','เด็กหญิงนุชจิรา -','เด็กหญิงจิณห์นิภา คีรีสุเรนทร์','เด็กชายพิศาล ไพรวันไพศาล','นางสาวศศิกานต์ ธนเสรีธรรม','นางสาวนิตยา สถิตย์สาละวิน','นายมาดี -','เด็กชายวรเดช ครองวิถี','เด็กหญิงภัทรวดี เกตุประจัน','เด็กชายวีรวิชญ์ กันแย้ม','เด็กหญิงณิชนันท์ กิจการจรัส','เด็กหญิงบ๊วยพอ -','นายพาต่าย่อ -','เด็กหญิงนิลภา -','เด็กหญิงนอลาซี -']
+};
+let STUDENTS = { ...STUDENTS_FALLBACK };
+
+const ROOM_COLORS = {
+  'ป.4/1':['#eeedfe','#3c3489'],
+  'ป.4/2':['#e1f5ee','#085041'],
+  'ป.5/1':['#faeeda','#633806'],
+  'ป.5/2':['#faece7','#712b13'],
+  'ม.1':['#e6f1fb','#0c447c']
+};
+
+let assignments = {};
+let submissions = {};
+let currentHWId = null;
+let html5QrScanner = null;
+let qrGenSet = new Set();
+
+function initFirebase() {
+  setSyncStatus('loading');
+  // โหลดนักเรียนจาก Firebase (ถ้ามี)
+  onValue(ref(db, 'students'), snap => {
+    const data = snap.val();
+    if (data) {
+      const loaded = {};
+      Object.values(data).forEach(roomObj => {
+        if (roomObj.room && roomObj.students) {
+          loaded[roomObj.room] = Object.values(roomObj.students)
+            .sort((a,b) => a.index - b.index)
+            .map(s => s.name);
+        }
+      });
+      if (Object.keys(loaded).length > 0) {
+        STUDENTS = loaded;
+        // อัปเดต dropdown ห้องเรียนทุก select
+        updateRoomSelects();
+      }
+    }
+  });
+  onValue(ref(db, 'assignments'), snap => {
+    assignments = snap.val() || {};
+    refreshAll();
+    setSyncStatus('ok');
+  }, err => setSyncStatus('err', err.message));
+  onValue(ref(db, 'submissions'), snap => {
+    submissions = snap.val() || {};
+    refreshAll();
+  });
+}
+
+function updateRoomSelects() {
+  const rooms = Object.keys(STUDENTS);
+  const selects = ['filter-room','filter-hw-student','hw-room','qr-filter-room','report-room'];
+  selects.forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    const cur = sel.value;
+    // เก็บ option แรก (ทุกห้อง / เลือกงาน)
+    const first = sel.options[0];
+    while (sel.options.length > 1) sel.remove(1);
+    rooms.forEach(r => {
+      const opt = document.createElement('option');
+      opt.value = r; opt.textContent = r;
+      sel.appendChild(opt);
+    });
+    if (cur) sel.value = cur;
+  });
+}
+
+function setSyncStatus(state, msg) {
+  const dot = document.getElementById('sync-dot');
+  const txt = document.getElementById('sync-text');
+  dot.className = 'sync-dot ' + state;
+  txt.textContent = state === 'ok' ? 'ซิงค์แล้ว (Firebase)' : state === 'err' ? 'ข้อผิดพลาด: '+(msg||'') : 'กำลังเชื่อมต่อ...';
+}
+
+function refreshAll() {
+  const p = document.querySelector('.page.active')?.id?.replace('page-','');
+  if (p === 'dashboard') renderDashboard();
+  if (p === 'assignments') renderAssignmentList();
+  if (p === 'students') renderStudents();
+  if (p === 'report') renderReport();
+  updateScanHWSelect();
+  updateTodayCount();
+}
+
+window.showPage = function(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  const titles = {dashboard:'ภาพรวม',scan:'สแกน QR',assignments:'งาน/การบ้าน',students:'นักเรียน',qrcards:'บัตร QR',report:'รายงาน'};
+  document.getElementById('page-title').textContent = titles[name]||name;
+  document.querySelectorAll('.nav-item').forEach(b => { if (b.textContent.includes(titles[name])) b.classList.add('active'); });
+  if (name==='dashboard') renderDashboard();
+  if (name==='assignments') renderAssignmentList();
+  if (name==='students') { populateStudentHWFilter(); renderStudents(); }
+  if (name==='qrcards') renderQRCards();
+  if (name==='report') { populateReportHWSelect(); renderReport(); }
+  if (name==='scan') updateScanHWSelect();
+  if (name!=='scan') stopScan();
+};
+
+function today() { return new Date().toISOString().slice(0,10); }
+function fmtDate(d) { if(!d) return '-'; const p=d.split('-'); return `${p[2]}/${p[1]}/${p[0]}`; }
+function shortName(n) { return n.replace(/^(เด็กหญิง|เด็กชาย|นาย|นางสาว|นาง)/,''); }
+function roomPill(room) {
+  const [bg,tc] = ROOM_COLORS[room]||['#f1efe8','#444441'];
+  return `<span class="room-pill" style="background:${bg};color:${tc}">${room}</span>`;
+}
+function getSubsForHW(hwId) { return submissions[hwId]||{}; }
+function isSubmitted(hwId, sid) { return !!(submissions[hwId]&&submissions[hwId][sid]); }
+function toast(msg, dur=2500) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), dur);
+}
+
+// --- DASHBOARD ---
+function renderDashboard() {
+  const hwArr = Object.values(assignments).sort((a,b)=>b.createdAt-a.createdAt);
+  const allSubs = Object.values(submissions).flatMap(s=>Object.values(s));
+  const todaySubs = allSubs.filter(s=>s.date===today());
+  document.getElementById('stat-total-hw').textContent = hwArr.length;
+  document.getElementById('stat-today').textContent = todaySubs.length;
+  let missing = 0;
+  hwArr.forEach(hw => {
+    const subs = getSubsForHW(hw.id);
+    const total = hw.room ? (STUDENTS[hw.room]||[]).length : Object.values(STUDENTS).flat().length;
+    missing += total - Object.keys(subs).length;
+  });
+  document.getElementById('stat-missing').textContent = missing;
+
+  const hwEl = document.getElementById('dash-hw-list');
+  if (hwArr.length === 0) {
+    hwEl.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text3);font-size:14px">ยังไม่มีงาน — กด "เพิ่มงาน" เพื่อเริ่ม</div>';
+  } else {
+    hwEl.innerHTML = '<div class="hw-list" style="padding:14px">' + hwArr.slice(0,5).map(hw => {
+      const subs = getSubsForHW(hw.id);
+      const total = hw.room ? (STUDENTS[hw.room]||[]).length : Object.values(STUDENTS).flat().length;
+      const done = Object.keys(subs).length;
+      const pct = total ? Math.round(done/total*100) : 0;
+      return `<div class="hw-item">
+        <div class="hw-info">
+          <div class="hw-name">${hw.name}${hw.subject?` <span style="font-size:12px;color:var(--text3)">(${hw.subject})</span>`:''}</div>
+          <div class="hw-meta">${hw.room||'ทุกห้อง'} · กำหนดส่ง ${fmtDate(hw.due)}</div>
+        </div>
+        <div style="font-size:13px;color:var(--text2);margin-right:8px;min-width:50px;text-align:right">${done}/${total}</div>
+        <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+        <button class="btn btn-sm" onclick="showHWDetail('${hw.id}')"><i class="ti ti-eye"></i></button>
+      </div>`;
+    }).join('') + '</div>';
+  }
+
+  const recentEl = document.getElementById('dash-recent');
+  const recent = allSubs.sort((a,b)=>b.ts-a.ts).slice(0,10);
+  if (recent.length === 0) {
+    recentEl.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text3);font-size:14px">ยังไม่มีการส่งงาน</div>';
+  } else {
+    recentEl.innerHTML = '<table><thead><tr><th>นักเรียน</th><th>ห้อง</th><th>งาน</th><th>เวลา</th></tr></thead><tbody>' +
+      recent.map(s => {
+        const hw = assignments[s.hwId]||{};
+        const time = s.ts ? new Date(s.ts).toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'}) : '-';
+        return `<tr><td>${shortName(s.name)}</td><td>${roomPill(s.room)}</td><td>${hw.name||'-'}</td><td style="color:var(--text3)">${s.date||''} ${time}</td></tr>`;
+      }).join('') + '</tbody></table>';
+  }
+}
+
+function updateTodayCount() {
+  const cnt = Object.values(submissions).flatMap(s=>Object.values(s)).filter(s=>s.date===today()).length;
+  document.getElementById('today-count').textContent = cnt;
+}
+
+// --- ASSIGNMENTS ---
+window.showAddHW = function() {
+  document.getElementById('hw-name').value='';
+  document.getElementById('hw-subject').value='';
+  document.getElementById('hw-room').value='';
+  document.getElementById('hw-date').value=today();
+  document.getElementById('hw-due').value='';
+  document.getElementById('hw-note').value='';
+  document.getElementById('modal-add-hw').classList.add('show');
+};
+window.closeModal = function(id) { document.getElementById(id).classList.remove('show'); };
+
+window.saveAssignment = async function() {
+  const name = document.getElementById('hw-name').value.trim();
+  if (!name) { toast('กรุณาใส่ชื่องาน'); return; }
+  const newRef = push(ref(db,'assignments'));
+  const hw = {
+    id: newRef.key, name,
+    subject: document.getElementById('hw-subject').value.trim(),
+    room: document.getElementById('hw-room').value,
+    date: document.getElementById('hw-date').value,
+    due: document.getElementById('hw-due').value,
+    note: document.getElementById('hw-note').value.trim(),
+    createdAt: Date.now()
+  };
+  await set(newRef, hw);
+  closeModal('modal-add-hw');
+  toast('✅ เพิ่มงานแล้ว: ' + name);
+};
+
+function renderAssignmentList() {
+  const hwArr = Object.values(assignments).sort((a,b)=>b.createdAt-a.createdAt);
+  const el = document.getElementById('hw-list-container');
+  if (hwArr.length === 0) {
+    el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text3)">ยังไม่มีงาน กด "เพิ่มงานใหม่" เพื่อเริ่ม</div>';
+    return;
+  }
+  el.innerHTML = '<div class="hw-list" style="padding:16px">' + hwArr.map(hw => {
+    const subs = getSubsForHW(hw.id);
+    const total = hw.room ? (STUDENTS[hw.room]||[]).length : Object.values(STUDENTS).flat().length;
+    const done = Object.keys(subs).length;
+    const pct = total ? Math.round(done/total*100) : 0;
+    return `<div class="hw-item">
+      <div style="width:40px;height:40px;border-radius:var(--radius);background:var(--purple-light);display:flex;align-items:center;justify-content:center;color:var(--purple);font-size:20px;flex-shrink:0">
+        <i class="ti ti-clipboard-list"></i>
+      </div>
+      <div class="hw-info">
+        <div class="hw-name">${hw.name}${hw.subject?` <span style="font-size:12px;color:var(--text3)">(${hw.subject})</span>`:''}</div>
+        <div class="hw-meta">${hw.room?roomPill(hw.room):'<span style="color:var(--text3)">ทุกห้อง</span>'} · วันที่ ${fmtDate(hw.date)} · กำหนดส่ง ${fmtDate(hw.due)}</div>
+      </div>
+      <div style="text-align:center;min-width:60px">
+        <div style="font-size:18px;font-weight:600;color:var(--teal)">${done}</div>
+        <div style="font-size:11px;color:var(--text3)">จาก ${total}</div>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+      <button class="btn btn-sm" onclick="showHWDetail('${hw.id}')"><i class="ti ti-eye"></i> ดู</button>
+    </div>`;
+  }).join('') + '</div>';
+}
+
+window.showHWDetail = function(hwId) {
+  currentHWId = hwId;
+  const hw = assignments[hwId]; if (!hw) return;
+  document.getElementById('detail-title').textContent = hw.name;
+  const subs = getSubsForHW(hwId);
+  const targetStudents = hw.room
+    ? (STUDENTS[hw.room]||[]).map((name,i) => ({id:'s_'+hw.room.replace(/\./g,'')+'_'+i, name, room:hw.room}))
+    : Object.entries(STUDENTS).flatMap(([room,names]) => names.map((name,i) => ({id:'s_'+room.replace(/\./g,'')+'_'+i, name, room})));
+  const submitted = targetStudents.filter(s=>subs[s.id]);
+  const missing = targetStudents.filter(s=>!subs[s.id]);
+
+  document.getElementById('detail-content').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px">
+      <div class="stat-card teal"><div class="stat-label">ส่งแล้ว</div><div class="stat-val">${submitted.length}</div></div>
+      <div class="stat-card red"><div class="stat-label">ยังไม่ส่ง</div><div class="stat-val">${missing.length}</div></div>
+      <div class="stat-card purple"><div class="stat-label">ทั้งหมด</div><div class="stat-val">${targetStudents.length}</div></div>
+    </div>
+    ${hw.note?`<div style="background:var(--surface2);border-radius:var(--radius);padding:10px 14px;font-size:13px;color:var(--text2);margin-bottom:14px">${hw.note}</div>`:''}
+    <div style="font-size:13px;font-weight:500;color:var(--text3);margin-bottom:8px">ยังไม่ส่ง (${missing.length} คน)</div>
+    <div style="max-height:200px;overflow-y:auto;margin-bottom:14px;border:.5px solid var(--border);border-radius:var(--radius)">
+      ${missing.length===0?'<div style="text-align:center;padding:16px;color:var(--teal)">✅ ทุกคนส่งแล้ว!</div>':
+        missing.map(s=>`<div style="padding:7px 12px;border-bottom:.5px solid var(--border);font-size:14px;display:flex;align-items:center;gap:8px">
+          ${roomPill(s.room)} ${shortName(s.name)}
+          <button onclick="markSubmit('${hwId}','${s.id}','${s.name}','${s.room}')" style="margin-left:auto;padding:3px 10px;border-radius:var(--radius);border:.5px solid #9fe1cb;background:var(--teal-light);color:var(--teal);cursor:pointer;font-size:12px;font-family:inherit">✓ ทำเครื่องหมาย</button>
+        </div>`).join('')}
+    </div>
+    <div style="font-size:13px;font-weight:500;color:var(--text3);margin-bottom:8px">ส่งแล้ว (${submitted.length} คน)</div>
+    <div style="max-height:160px;overflow-y:auto;border:.5px solid var(--border);border-radius:var(--radius)">
+      ${submitted.map(s=>{
+        const sub=subs[s.id];
+        const isLate = hw.due && sub.date && sub.date > hw.due;
+        return `<div style="padding:7px 12px;border-bottom:.5px solid var(--border);font-size:14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          ${roomPill(s.room)} ${shortName(s.name)}
+          ${isLate?`<span style="font-size:11px;background:#fff3e0;color:#e65100;border:1px solid #ffcc80;border-radius:20px;padding:1px 8px">⏰ ส่งช้า</span>`:''}
+          <span style="margin-left:auto;font-size:12px;color:var(--text3)">${sub.date||''} ${sub.method==='qr'?'📷 QR':'✏️ ครู'}</span>
+          <button onclick="unmarkSubmit('${hwId}','${s.id}','${s.name}')" title="ยกเลิกการส่ง" style="padding:2px 8px;border-radius:var(--radius);border:.5px solid #f7c1c1;background:#fcebeb;color:#a32d2d;cursor:pointer;font-size:11px;font-family:inherit">✕ ยกเลิก</button>
+        </div>`;
+      }).join('')}
+    </div>`;
+  document.getElementById('modal-hw-detail').classList.add('show');
+};
+
+window.markSubmit = async function(hwId, sid, name, room) {
+  if (isSubmitted(hwId,sid)) { toast('บันทึกแล้ว'); return; }
+  await set(ref(db,`submissions/${hwId}/${sid}`), {studentId:sid, name, room, hwId, date:today(), ts:Date.now(), method:'manual'});
+  toast(`✅ ${shortName(name)} ส่งงานแล้ว`);
+  showHWDetail(hwId);
+};
+
+window.unmarkSubmit = async function(hwId, sid, name) {
+  if (!confirm(`ยกเลิกการส่งงานของ "${shortName(name)}" ใช่ไหม?`)) return;
+  await remove(ref(db,`submissions/${hwId}/${sid}`));
+  toast(`↩️ ยกเลิกการส่งของ ${shortName(name)} แล้ว`);
+  showHWDetail(hwId);
+};
+
+window.deleteCurrentHW = async function() {
+  if (!currentHWId) return;
+  if (!confirm('ลบงานนี้? ข้อมูลการส่งจะถูกลบด้วย')) return;
+  await remove(ref(db,'assignments/'+currentHWId));
+  await remove(ref(db,'submissions/'+currentHWId));
+  closeModal('modal-hw-detail');
+  toast('🗑️ ลบงานแล้ว');
+};
+
+// --- SCAN ---
+function updateScanHWSelect() {
+  const sel = document.getElementById('scan-hw-select');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">-- เลือกงาน --</option>';
+  Object.values(assignments).sort((a,b)=>b.createdAt-a.createdAt).forEach(hw => {
+    sel.innerHTML += `<option value="${hw.id}">${hw.name}${hw.room?' ('+hw.room+')':''}</option>`;
+  });
+  if (cur) sel.value = cur;
+}
+
+window.startScan = function() {
+  const hwId = document.getElementById('scan-hw-select').value;
+  if (!hwId) { toast('เลือกงานก่อนนะครับ'); return; }
+  document.getElementById('scan-area').style.display = 'none';
+  document.getElementById('scanner-container').style.display = 'block';
+  html5QrScanner = new Html5Qrcode('qr-reader');
+  html5QrScanner.start(
+    {facingMode:'environment'},
+    {fps:10, qrbox:{width:250,height:250}},
+    async qrText => {
+      try {
+        const data = JSON.parse(qrText);
+        if (!data.studentId) return;
+        const hwId = document.getElementById('scan-hw-select').value;
+        if (!hwId) return;
+        if (isSubmitted(hwId, data.studentId)) { toast('⚠️ '+shortName(data.name)+' ส่งแล้ว!'); return; }
+        await set(ref(db,`submissions/${hwId}/${data.studentId}`), {
+          studentId:data.studentId, name:data.name, room:data.room, hwId, date:today(), ts:Date.now(), method:'qr'
+        });
+        const hw = assignments[hwId]||{};
+        document.getElementById('scan-name').textContent = shortName(data.name);
+        document.getElementById('scan-room').textContent = data.room;
+        document.getElementById('scan-hw-name').textContent = hw.name||hwId;
+        const res = document.getElementById('scan-result');
+        res.style.display='block';
+        res.classList.remove('scan-flash'); void res.offsetWidth; res.classList.add('scan-flash');
+        addScanLog(data.name, data.room, hw.name||hwId);
+        toast('✅ '+shortName(data.name)+' ส่งงานแล้ว!');
+      } catch(e){}
+    }, ()=>{}
+  ).catch(err=>toast('ไม่สามารถเปิดกล้องได้: '+err));
+};
+
+function addScanLog(name, room, hwName) {
+  const log = document.getElementById('scan-log');
+  const item = document.createElement('div');
+  item.style.cssText = 'padding:8px 12px;background:var(--teal-light);border-radius:var(--radius);margin-bottom:6px;font-size:13px;display:flex;align-items:center;gap:8px';
+  item.innerHTML = `<i class="ti ti-check" style="color:var(--teal)"></i> <strong>${shortName(name)}</strong> <span style="color:var(--text3)">${room}</span> <span style="margin-left:auto;color:var(--text3)">${new Date().toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'})}</span>`;
+  log.insertBefore(item, log.firstChild);
+  if (log.children.length>10) log.removeChild(log.lastChild);
+}
+
+window.stopScan = function() {
+  if (html5QrScanner) { html5QrScanner.stop().catch(()=>{}); html5QrScanner=null; }
+  const scanArea = document.getElementById('scan-area');
+  const scanCont = document.getElementById('scanner-container');
+  if (scanArea) scanArea.style.display='flex';
+  if (scanCont) scanCont.style.display='none';
+};
+
+// --- STUDENTS ---
+function populateStudentHWFilter() {
+  const sel = document.getElementById('filter-hw-student');
+  sel.innerHTML = '<option value="">เช็คงาน (เลือกงาน)</option>';
+  Object.values(assignments).sort((a,b)=>b.createdAt-a.createdAt).forEach(hw => {
+    sel.innerHTML += `<option value="${hw.id}">${hw.name}</option>`;
+  });
+}
+
+window.renderStudents = function() {
+  const room = document.getElementById('filter-room').value;
+  const q = document.getElementById('filter-name').value.trim().toLowerCase();
+  const hwId = document.getElementById('filter-hw-student').value;
+  let list = [];
+  Object.entries(STUDENTS).forEach(([r,names]) => {
+    if (room && r!==room) return;
+    names.forEach((name,i) => {
+      if (q && !name.toLowerCase().includes(q)) return;
+      list.push({id:'s_'+r.replace(/\./g,'')+'_'+i, name, room:r});
+    });
+  });
+  document.getElementById('student-count-badge').textContent = list.length+' คน';
+  const subs = hwId ? getSubsForHW(hwId) : {};
+  document.getElementById('students-table-wrap').innerHTML = '<table><thead><tr><th>#</th><th>ชื่อ</th><th>ห้อง</th>'+(hwId?'<th>สถานะ</th>':'')+'</tr></thead><tbody>'+
+    list.map((s,i) => `<tr><td style="color:var(--text3)">${i+1}</td><td>${shortName(s.name)}</td><td>${roomPill(s.room)}</td>`+
+      (hwId?`<td>${subs[s.id]?'<span class="hw-badge badge-done">✓ ส่งแล้ว</span>':'<span class="hw-badge badge-miss">✗ ยังไม่ส่ง</span>'}</td>`:'')+
+      `</tr>`).join('')+'</tbody></table>';
+};
+
+// --- QR CARDS ---
+window.renderQRCards = function() {
+  const room = document.getElementById('qr-filter-room').value;
+  const q = document.getElementById('qr-search').value.trim().toLowerCase();
+  const grid = document.getElementById('qr-grid');
+  qrGenSet = new Set();
+  let list = [];
+  Object.entries(STUDENTS).forEach(([r,names]) => {
+    if (room && r!==room) return;
+    names.forEach((name,i) => {
+      if (q && !name.toLowerCase().includes(q)) return;
+      list.push({id:'s_'+r.replace(/\./g,'')+'_'+i, name, room:r});
+    });
+  });
+  grid.innerHTML = list.map(s => {
+    const [bg,tc] = ROOM_COLORS[s.room]||['#f1efe8','#444441'];
+    return `<div class="qr-card">
+      <span class="room-pill" style="background:${bg};color:${tc};font-size:11px">${s.room}</span>
+      <div class="qr-wrap" id="qrw-${s.id}"></div>
+      <div style="font-size:12px;font-weight:500;line-height:1.4">${shortName(s.name)}</div>
+    </div>`;
+  }).join('');
+  setTimeout(() => {
+    list.forEach(s => {
+      const wrap = document.getElementById('qrw-'+s.id);
+      if (!wrap || qrGenSet.has(s.id)) return;
+      qrGenSet.add(s.id);
+      const payload = JSON.stringify({studentId:s.id, name:s.name, room:s.room, action:'submit'});
+      const img = document.createElement('img');
+      img.style.cssText = 'width:100px;height:100px;display:block';
+      wrap.appendChild(img);
+      QRCode.toDataURL(payload, {width:100, margin:1, color:{dark:'#1a1a18',light:'#ffffff'}})
+        .then(url => { img.src = url; })
+        .catch(() => { wrap.innerHTML=`<div style="width:100px;height:100px;display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--text3);text-align:center;border:1px dashed var(--border)">QR Error<br>${s.id}</div>`; });
+    });
+  }, 300);
+};
+
+// --- REPORT ---
+function populateReportHWSelect() {
+  const sel = document.getElementById('report-hw');
+  sel.innerHTML = '<option value="">เลือกงาน</option>';
+  Object.values(assignments).sort((a,b)=>b.createdAt-a.createdAt).forEach(hw => {
+    sel.innerHTML += `<option value="${hw.id}">${hw.name}</option>`;
+  });
+}
+
+window.renderReport = function() {
+  const hwId = document.getElementById('report-hw').value;
+  const room = document.getElementById('report-room').value;
+  const status = document.getElementById('report-status').value;
+  const el = document.getElementById('report-container');
+  if (!hwId) { el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text3)">เลือกงานที่ต้องการดูรายงาน</div>'; return; }
+  const hw = assignments[hwId];
+  const subs = getSubsForHW(hwId);
+  let list = [];
+  Object.entries(STUDENTS).forEach(([r,names]) => {
+    if (room && r!==room) return;
+    names.forEach((name,i) => {
+      const id = 's_'+r.replace(/\./g,'')+'_'+i;
+      const done = !!subs[id];
+      if (status==='done' && !done) return;
+      if (status==='miss' && done) return;
+      list.push({id, name, room:r, done, sub:subs[id]});
+    });
+  });
+  const doneCnt = list.filter(s=>s.done).length;
+  const missCnt = list.filter(s=>!s.done).length;
+  el.innerHTML = `
+    <div class="stats-grid" style="margin-bottom:16px">
+      <div class="stat-card teal"><div class="stat-label">ส่งแล้ว</div><div class="stat-val">${doneCnt}</div></div>
+      <div class="stat-card red"><div class="stat-label">ยังไม่ส่ง</div><div class="stat-val">${missCnt}</div></div>
+      <div class="stat-card purple"><div class="stat-label">รวมทั้งหมด</div><div class="stat-val">${list.length}</div></div>
+      <div class="stat-card amber"><div class="stat-label">เปอร์เซ็นต์</div><div class="stat-val">${list.length?Math.round(doneCnt/list.length*100):0}%</div></div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">${hw.name}</span>
+        <button class="btn btn-sm" onclick="window.print()"><i class="ti ti-printer"></i> พิมพ์</button>
+      </div>
+      <table>
+        <thead><tr><th>#</th><th>ชื่อ</th><th>ห้อง</th><th>สถานะ</th><th>วันที่ส่ง</th><th>วิธี</th></tr></thead>
+        <tbody>${list.map((s,i)=>`<tr>
+          <td style="color:var(--text3)">${i+1}</td>
+          <td>${shortName(s.name)}</td>
+          <td>${roomPill(s.room)}</td>
+          <td>${s.done?'<span class="hw-badge badge-done">✓ ส่งแล้ว</span>':'<span class="hw-badge badge-miss">✗ ยังไม่ส่ง</span>'}</td>
+          <td style="color:var(--text3)">${s.sub?.date||'-'}</td>
+          <td style="color:var(--text3)">${s.sub?.method==='qr'?'QR':s.sub?.method==='manual'?'ครู':'-'}</td>
+        </tr>`).join('')}</tbody>
+      </table>
+    </div>`;
+};
+
+// Init
+document.getElementById('hw-date').value = today();
+initFirebase();
+setTimeout(()=>{ showPage('dashboard'); renderQRCards(); }, 400);
+</script>
+</body>
+</html>

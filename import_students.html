@@ -1,0 +1,82 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Sarabun',sans-serif;background:var(--color-background-tertiary);color:var(--color-text-primary);padding:20px}
+.card{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:20px;margin-bottom:16px}
+.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+h2{font-size:18px;font-weight:500}
+.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:20px}
+.stat{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:12px;text-align:center}
+.stat-label{font-size:12px;color:var(--color-text-secondary);margin-bottom:4px}
+.stat-val{font-size:20px;font-weight:500}
+.btn{padding:10px 20px;border-radius:8px;border:none;cursor:pointer;font-size:15px;font-family:inherit;font-weight:500;transition:all .15s;display:inline-flex;align-items:center;gap:6px;width:100%;justify-content:center}
+.btn-primary{background:#534ab7;color:#fff}
+.btn-primary:hover{background:#3c348a}
+.btn-success{background:#e1f5ee;color:#0f6e56}
+.room-list{display:flex;flex-direction:column;gap:8px}
+.room-item{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--color-background-secondary);border-radius:var(--border-radius-md);font-size:14px}
+.room-name{font-weight:500}
+.room-count{color:var(--color-text-secondary);font-size:13px}
+.badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:500;background:#e1f5ee;color:#0f6e56}
+.result{background:#e1f5ee;border-radius:var(--border-radius-md);padding:14px;font-size:14px;color:#0f6e56;font-weight:500;text-align:center;display:none}
+</style>
+
+<h2 class="sr-only">นำเข้ารายชื่อนักเรียนจากไฟล์ Excel</h2>
+
+<div class="stats">
+  <div class="stat"><div class="stat-label">ป.4/1</div><div class="stat-val">28</div></div>
+  <div class="stat"><div class="stat-label">ป.4/2</div><div class="stat-val">30</div></div>
+  <div class="stat"><div class="stat-label">ป.5/1</div><div class="stat-val">37</div></div>
+  <div class="stat"><div class="stat-label">ป.5/2</div><div class="stat-val">39</div></div>
+  <div class="stat"><div class="stat-label">ม.1</div><div class="stat-val">45</div></div>
+</div>
+
+<div class="card">
+  <div class="header"><h2>รายชื่อที่จะนำเข้า</h2><span style="font-size:13px;color:var(--color-text-secondary)">รวม 179 คน</span></div>
+  <div class="room-list">
+    <div class="room-item"><span class="room-name">ป.4/1</span><span class="room-count">28 คน</span></div>
+    <div class="room-item"><span class="room-name">ป.4/2</span><span class="room-count">30 คน</span></div>
+    <div class="room-item"><span class="room-name">ป.5/1</span><span class="room-count">37 คน</span></div>
+    <div class="room-item"><span class="room-name">ป.5/2</span><span class="room-count">39 คน</span></div>
+    <div class="room-item"><span class="room-name">ม.1</span><span class="room-count">45 คน</span></div>
+  </div>
+</div>
+
+<button class="btn btn-primary" onclick="importAll()">นำเข้าทั้งหมดสู่ระบบเช็คงาน</button>
+<div id="result" class="result" style="margin-top:12px">✅ นำเข้าสำเร็จ! เพิ่มนักเรียน 179 คน ใน 5 ห้องเรียนแล้ว</div>
+
+<script>
+const DATA = {
+  'ป.4/1': ['เด็กหญิงซูหลี วงษ์ธีรธรรม','เด็กหญิงสุภาพร -','เด็กหญิงสุธิมา สิงห์ทุ่งเสือ','เด็กหญิงวัลลิญา ไพรมุกดา','เด็กหญิงวราพร ถาวรพิพัฒน์กุล','เด็กหญิงแพรวพราว -','เด็กหญิงปริยกร เก่งกุญชร','เด็กหญิงนันทิชา -','เด็กหญิงทัดดาว สนธิพรรณ','เด็กหญิงดวงนภา ประกายน้ำ','เด็กหญิงจารุภา โชติรสสกุล','เด็กหญิงเกวลี พิมลศรทอง','เด็กชายศรัณยู มหาตมะคีรี','เด็กชายศรชัย มารยาศรี','เด็กชายวุฒินันท์ ใจเกลียว','เด็กชายฤทธิไกร ใจหยัดยืน','เด็กชายพงศกร โชติรสสกุล','เด็กชายประวิทย์ มหาตมะคีรี','เด็กชายก้องภพ พิมลศรทอง','เด็กชายกษิดิส แสนเกษตรกร','เด็กชายกมล -','เด็กหญิงธนพร -','เด็กหญิงเนาะชากุ -','เด็กหญิงนิตา -','เด็กชายสุภทัต ภูมิรินทร์พลอย','เด็กหญิงจันทร์จิรา วงศ์เจริญ','เด็กชายพงษ์เทพ วรรณวิลาศ','เด็กหญิงฉายสุดา ยุพาสกุล'],
+  'ป.4/2': ['เด็กหญิงสุดาพร -','เด็กหญิงอรจิรา รักเผ่าไทย','เด็กหญิงอรจิรา บุญทวีคูณ','เด็กหญิงวริศรา ไพรมุกดา','เด็กหญิงวนิดา โชติรสสกุล','เด็กหญิงพศิกา เก่งกุญชร','เด็กหญิงปฐมพร มณีประกายแก้ว','เด็กหญิงขวัญทิพย์ วรางค์กรณ์ธาดา','เด็กหญิงกิ่งฟ้า พงศ์พนาไพรดอน','เด็กหญิงกัญญารัตน์ -','เด็กหญิงกัณฐมณี ปัญญาจิตเกษม','เด็กหญิงกมลเนตร เอกอุดมรักษ์','เด็กชายเอกชัย -','เด็กชายอาทิตย์ เก่งกุญชร','เด็กชายพีรวัส สิงห์สล้าง','เด็กชายพลาโซซอ -','เด็กชายพรชัย ธนเสรีธรรม','เด็กชายทัตชน ไพรมุกดา','เด็กชายต่าบิ้บิ้ -','เด็กชายณัฐวุฒิ -','เด็กชายฉลองชัย อติโชคกุล','เด็กชายกิตติศักดิ์ คีรีสุเรนทร์','เด็กชายประยุทธ์ มหาตมะคีรี','เด็กชายแอ๊ะตามอ -','เด็กชายซะลีคูเวะ -','เด็กหญิงลลิตา -','เด็กชายกุลกิตต์ วงษ์วิชุดา','เด็กชายณรงค์ชัย วงษ์วิชุดา','เด็กชายพาจอวี -','เด็กชายอัศนี -'],
+  'ป.5/1': ['เด็กชายวิทยา พลังพร','เด็กชายศรชัย -','เด็กหญิงดารุณี ครองมรกต','เด็กหญิงนิภาดา โกศลบารมี','เด็กชายพีรพล แก้วพัชรพร','เด็กหญิงเอมิ -','เด็กหญิงกนกรัตน์ ทังสุรชัย','เด็กหญิงญาดา -','เด็กชายสุทิตย์ มาลาคีรีกุล','เด็กหญิงยุวดี ไพรแสงแก้ว','เด็กหญิงอรทัย ไพรแสงแก้ว','เด็กหญิงอรพิชา เจ็ดก้าวมา','เด็กชายภาคิน ดวงสกุลธรรม','เด็กหญิงคุนี -','เด็กชายทรายทราย -','เด็กหญิงสุรีพร เจริญพันธ์โชค','เด็กชายสุวิทย์ วิหคไพร','เด็กหญิงรักษ์พร -','เด็กหญิงดวงใจ คันธมาทน์งาม','เด็กชายดิเรก ไพรมุกดา','เด็กชายสิปปภาส โชติรสสกุล','เด็กหญิงแพรวา -','เด็กชายปรีชา -','เด็กหญิงยุวดี โชติรสสกุล','เด็กชายวุฒิภัทร ไพรมุกดา','เด็กหญิงเพชรลดา ทังสุรชัย','เด็กหญิงนันทิพร นราภัสสร','เด็กชายณรงค์ชัย ประกายน้ำ','เด็กหญิงบะหมี่ -','เด็กหญิงน่อกิ๊กิ -','เด็กหญิงหน่อพอเซ -','เด็กหญิงพอแกละเก่ -','เด็กชายดิ๊โพ -','เด็กหญิงน่อมึญอ -','นายณัฐดนัย -','เด็กหญิงณัฐพร สมศศิภา','เด็กหญิงกันย์สินี แก้วกุมารี'],
+  'ป.5/2': ['เด็กชายทินกร -','เด็กหญิงนันทิดา แสงฟ้าใส','เด็กหญิงกิตติญา มานะคีรีกุล','เด็กหญิงทีระพร -','เด็กหญิงหน่อพอทู -','เด็กหญิงแพรวา -','เด็กหญิงวิภาวดี -','เด็กหญิงรินดา -','เด็กหญิงชลธิชา โกศลบารมี','เด็กหญิงสุดา สถิตย์สาละวิน','เด็กชายเกรียงวุฒิ ไพรแสงแก้ว','เด็กหญิงประณาลี ขจรเดชวนา','เด็กหญิงสโรชา -','เด็กหญิงพรวลัย โกศลบารมี','เด็กหญิงกะโย่พอ -','เด็กชายสุวิทย์ ไพรแสงแก้ว','เด็กชายธีรเทพ มานะคีรีกุล','เด็กชายจิรัฏฐ์ มานะคีรีกุล','เด็กหญิงแพรวา -','เด็กหญิงอรนุช พนากรชัย','เด็กชายวาทิต ทัศนะงดงาม','นางสาวน่อเซเคะ -','เด็กชายจอโอะมึ -','เด็กชายน่าโล่ -','เด็กชายจ่อหนี่โท -','เด็กหญิงเหม่แซะอู -','นายจอเซทู -','นายวสันต์ พนากรชัย','เด็กชายกะหนุ -','เด็กชายเกอะปรือทู -','เด็กชายดิ๊โปะโละ -','เด็กหญิงน่อพอซอ -','เด็กชายพงศกร โศจิอรุณ','เด็กหญิงหน่อเชอแอะ -','เด็กชายจิรายุ ฉลองโชคทวี','เด็กหญิงสุพรรณิการ์ นาคาม้วนหาง','เด็กหญิงอนัญญา หงส์ทิพย์สุข','เด็กหญิงพรพิมล สมศศิภา','เด็กชายพสธร -'],
+  'ม.1': ['นายเตวิช แสงฟ้าใส','นายดนุเดช เกิดกุนที','เด็กหญิงดารุณี ประกายน้ำ','เด็กชายวีรากร โชติรสสกุล','เด็กชายอาทิตย์ ทังสุรชัย','เด็กหญิงอาลิสา -','เด็กหญิงชนิดา สุริยะวงศ์','เด็กชายทินกร -','เด็กหญิงจารวี วรางค์กรณ์ธาดา','เด็กหญิงวรรณภา เก่งกุญชร','เด็กหญิงจุไรรัตน์ สกุณาเคียงดง','เด็กหญิงอรดา บุญทวีคูณ','เด็กชายสิทธิพันธ์ ฟ้านภาแจ่ม','เด็กหญิงศรัณย์พร ปัญญาจิตเกษม','เด็กชายธนภัทร เก่งกุญชร','เด็กชายปิติ -','เด็กหญิงพฤกษา เครือสาร','เด็กหญิงชมพูนุช อิ่มเอมสวัสดิ์','เด็กหญิงลีลาวดี -','เด็กหญิงลลิตา -','เด็กหญิงนิตา เก่งกุญชร','เด็กชายปิยะ -','เด็กหญิงฐิตาภา ใจหยัดยืน','เด็กหญิงเพชรพลอย -','เด็กหญิงตุลยา -','นายแสงเพชร นาคาม้วนหาง','เด็กหญิงเฟื่องฟ้า -','นางสาวการะเกด -','เด็กหญิงนันทิวา นิ่มละออ','เด็กชายสนธิ -','เด็กหญิงจิดาภา กิตนิทัศน์','เด็กหญิงนุชจิรา -','เด็กหญิงจิณห์นิภา คีรีสุเรนทร์','เด็กชายพิศาล ไพรวันไพศาล','นางสาวศศิกานต์ ธนเสรีธรรม','นางสาวนิตยา สถิตย์สาละวิน','นายมาดี -','เด็กชายวรเดช ครองวิถี','เด็กหญิงภัทรวดี เกตุประจัน','เด็กชายวีรวิชญ์ กันแย้ม','เด็กหญิงณิชนันท์ กิจการจรัส','เด็กหญิงบ๊วยพอ -','นายพาต่าย่อ -','เด็กหญิงนิลภา -','เด็กหญิงนอลาซี -']
+};
+
+function importAll() {
+  const raw = localStorage.getItem('hw_tracker_v2');
+  const state = raw ? JSON.parse(raw) : {rooms:[],students:{},assignments:[],submissions:{}};
+  
+  let added = 0;
+  Object.entries(DATA).forEach(([room, names]) => {
+    if (!state.rooms.includes(room)) state.rooms.push(room);
+    if (!state.students[room]) state.students[room] = [];
+    const existing = new Set(state.students[room].map(s => s.name));
+    names.forEach(name => {
+      if (!existing.has(name)) {
+        state.students[room].push({id:'s'+Date.now()+Math.random().toString(36).slice(2,6), name});
+        added++;
+      }
+    });
+  });
+  
+  localStorage.setItem('hw_tracker_v2', JSON.stringify(state));
+  
+  const btn = document.querySelector('.btn-primary');
+  btn.textContent = '✅ นำเข้าสำเร็จแล้ว!';
+  btn.style.background = '#1d9e75';
+  document.getElementById('result').style.display = 'block';
+  document.getElementById('result').textContent = `✅ นำเข้าสำเร็จ! เพิ่มนักเรียน ${added} คน ใน 5 ห้องเรียนแล้ว — รีเฟรชระบบเช็คงานเพื่อดูข้อมูล`;
+}
+</script>

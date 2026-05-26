@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QR Code นักเรียน — แม่ต้าน</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#fff;--bg2:#f5f5f5;--bg3:#ebebeb;
+  --text:#1a1a1a;--text2:#666;--text3:#999;
+  --border:rgba(0,0,0,0.12);--border2:rgba(0,0,0,0.2);
+  --r:8px;--rlg:12px;
+}
+@media(prefers-color-scheme:dark){
+  :root{--bg:#1e1e1e;--bg2:#272727;--bg3:#2f2f2f;--text:#f0f0f0;--text2:#aaa;--text3:#777;--border:rgba(255,255,255,0.1);--border2:rgba(255,255,255,0.2)}
+}
+body{font-family:'Sarabun',sans-serif;background:var(--bg3);color:var(--text);padding:12px}
+h2.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
+.topbar{display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.topbar h1{font-size:16px;font-weight:600;flex:1;min-width:120px}
+input[type=text],select{padding:7px 11px;border:0.5px solid var(--border2);border-radius:var(--r);font-size:13px;font-family:inherit;background:var(--bg);color:var(--text);outline:none}
+.sw{flex:1;min-width:130px}
+.sw input{width:100%}
+button{padding:7px 13px;border-radius:var(--r);border:0.5px solid var(--border2);cursor:pointer;font-size:13px;font-family:inherit;font-weight:600;background:var(--bg);color:var(--text)}
+.bp{background:#534ab7;color:#fff;border-color:#534ab7}
+.badge{background:var(--bg2);border:0.5px solid var(--border);border-radius:20px;padding:3px 11px;font-size:12px;color:var(--text2);white-space:nowrap}
+.progress{font-size:12px;color:var(--text3);padding:4px 0 8px;text-align:center}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:9px}
+.card{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--rlg);padding:11px;display:flex;flex-direction:column;align-items:center;gap:6px}
+.rm{font-size:11px;font-weight:600;padding:2px 9px;border-radius:20px}
+.nm{font-size:12px;font-weight:500;text-align:center;color:var(--text);line-height:1.4}
+.sub{font-size:11px;color:var(--text3)}
+.qw{width:114px;height:114px;background:#fff;border-radius:5px;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0}
+.qw canvas{width:114px!important;height:114px!important;display:block}
+.empty{text-align:center;padding:32px;color:var(--text3);font-size:13px}
+@media print{
+  body{background:#fff;padding:4px}
+  .topbar,.np{display:none!important}
+  .grid{grid-template-columns:repeat(4,1fr);gap:6px}
+  .card{border:1px solid #ccc;break-inside:avoid;page-break-inside:avoid}
+}
+</style>
+</head>
+<body>
+<h2 class="sr-only">QR Code ประจำตัวนักเรียน โรงเรียนแม่ต้าน สำหรับสแกนส่งงาน</h2>
+<div class="topbar np">
+  <h1><i class="ti ti-qrcode" aria-hidden="true"></i> QR Code นักเรียน</h1>
+  <div class="sw"><input type="text" id="q" placeholder="🔍 ค้นหาชื่อ..." oninput="render()"></div>
+  <select id="rm" onchange="render()">
+    <option value="">ทุกห้อง</option>
+    <option>4.1</option><option>4.2</option>
+    <option>5.1</option><option>5.2</option>
+    <option>ม.1</option>
+  </select>
+  <span class="badge" id="cnt">0 คน</span>
+  <button class="bp np" onclick="window.print()"><i class="ti ti-printer" aria-hidden="true"></i> พิมพ์</button>
+</div>
+<div class="progress" id="prog"></div>
+<div id="grid" class="grid"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+<script>
+const RC = {
+  '4.1':{bg:'#eeedfe',tc:'#3c3489'},
+  '4.2':{bg:'#e1f5ee',tc:'#085041'},
+  '5.1':{bg:'#faeeda',tc:'#633806'},
+  '5.2':{bg:'#faece7',tc:'#712b13'},
+  'ม.1':{bg:'#e6f1fb',tc:'#0c447c'},
+};
+
+const ALL = [
+  // ป.4/1
+  {r:'4.1',i:1,n:'เด็กหญิงซูหลี วงษ์ธีรธรรม'},{r:'4.1',i:2,n:'เด็กหญิงสุภาพร'},
+  {r:'4.1',i:3,n:'เด็กหญิงสุธิมา สิงห์ทุ่งเสือ'},{r:'4.1',i:4,n:'เด็กหญิงวัลลิญา ไพรมุกดา'},
+  {r:'4.1',i:5,n:'เด็กหญิงวราพร ถาวรพิพัฒน์กุล'},{r:'4.1',i:6,n:'เด็กหญิงแพรวพราว'},
+  {r:'4.1',i:7,n:'เด็กหญิงปริยกร เก่งกุญชร'},{r:'4.1',i:8,n:'เด็กหญิงนันทิชา'},
+  {r:'4.1',i:9,n:'เด็กหญิงทัดดาว สนธิพรรณ'},{r:'4.1',i:10,n:'เด็กหญิงดวงนภา ประกายน้ำ'},
+  {r:'4.1',i:11,n:'เด็กหญิงจารุภา โชติรสสกุล'},{r:'4.1',i:12,n:'เด็กหญิงเกวลี พิมลศรทอง'},
+  {r:'4.1',i:13,n:'เด็กชายศรัณยู มหาตมะคีรี'},{r:'4.1',i:14,n:'เด็กชายศรชัย มารยาศรี'},
+  {r:'4.1',i:15,n:'เด็กชายวุฒินันท์ ใจเกลียว'},{r:'4.1',i:16,n:'เด็กชายฤทธิไกร ใจหยัดยืน'},
+  {r:'4.1',i:17,n:'เด็กชายพงศกร โชติรสสกุล'},{r:'4.1',i:18,n:'เด็กชายประวิทย์ มหาตมะคีรี'},
+  {r:'4.1',i:19,n:'เด็กชายก้องภพ พิมลศรทอง'},{r:'4.1',i:20,n:'เด็กชายกษิดิส แสนเกษตรกร'},
+  {r:'4.1',i:21,n:'เด็กชายกมล'},{r:'4.1',i:22,n:'เด็กหญิงธนพร'},
+  {r:'4.1',i:23,n:'เด็กหญิงเนาะชากุ'},{r:'4.1',i:24,n:'เด็กหญิงนิตา'},
+  {r:'4.1',i:25,n:'เด็กชายสุภทัต ภูมิรินทร์พลอย'},{r:'4.1',i:26,n:'เด็กหญิงจันทร์จิรา วงศ์เจริญ'},
+  {r:'4.1',i:27,n:'เด็กชายพงษ์เทพ วรรณวิลาศ'},{r:'4.1',i:28,n:'เด็กหญิงฉายสุดา ยุพาสกุล'},
+  // ป.4/2
+  {r:'4.2',i:1,n:'เด็กหญิงสุดาพร'},{r:'4.2',i:2,n:'เด็กหญิงอรจิรา รักเผ่าไทย'},
+  {r:'4.2',i:3,n:'เด็กหญิงอรจิรา บุญทวีคูณ'},{r:'4.2',i:4,n:'เด็กหญิงวริศรา ไพรมุกดา'},
+  {r:'4.2',i:5,n:'เด็กหญิงวนิดา โชติรสสกุล'},{r:'4.2',i:6,n:'เด็กหญิงพศิกา เก่งกุญชร'},
+  {r:'4.2',i:7,n:'เด็กหญิงปฐมพร มณีประกายแก้ว'},{r:'4.2',i:8,n:'เด็กหญิงขวัญทิพย์ วรางค์กรณ์ธาดา'},
+  {r:'4.2',i:9,n:'เด็กหญิงกิ่งฟ้า พงศ์พนาไพรดอน'},{r:'4.2',i:10,n:'เด็กหญิงกัญญารัตน์'},
+  {r:'4.2',i:11,n:'เด็กหญิงกัณฐมณี ปัญญาจิตเกษม'},{r:'4.2',i:12,n:'เด็กหญิงกมลเนตร เอกอุดมรักษ์'},
+  {r:'4.2',i:13,n:'เด็กชายเอกชัย'},{r:'4.2',i:14,n:'เด็กชายอาทิตย์ เก่งกุญชร'},
+  {r:'4.2',i:15,n:'เด็กชายพีรวัส สิงห์สล้าง'},{r:'4.2',i:16,n:'เด็กชายพลาโซซอ'},
+  {r:'4.2',i:17,n:'เด็กชายพรชัย ธนเสรีธรรม'},{r:'4.2',i:18,n:'เด็กชายทัตชน ไพรมุกดา'},
+  {r:'4.2',i:19,n:'เด็กชายต่าบิ้บิ้'},{r:'4.2',i:20,n:'เด็กชายณัฐวุฒิ'},
+  {r:'4.2',i:21,n:'เด็กชายฉลองชัย อติโชคกุล'},{r:'4.2',i:22,n:'เด็กชายกิตติศักดิ์ คีรีสุเรนทร์'},
+  {r:'4.2',i:23,n:'เด็กชายประยุทธ์ มหาตมะคีรี'},{r:'4.2',i:24,n:'เด็กชายแอ๊ะตามอ'},
+  {r:'4.2',i:25,n:'เด็กชายซะลีคูเวะ'},{r:'4.2',i:26,n:'เด็กหญิงลลิตา'},
+  {r:'4.2',i:27,n:'เด็กชายกุลกิตต์ วงษ์วิชุดา'},{r:'4.2',i:28,n:'เด็กชายณรงค์ชัย วงษ์วิชุดา'},
+  {r:'4.2',i:29,n:'เด็กชายพาจอวี'},{r:'4.2',i:30,n:'เด็กชายอัศนี'},
+  // ป.5/1
+  {r:'5.1',i:1,n:'เด็กชายวิทยา พลังพร'},{r:'5.1',i:2,n:'เด็กชายศรชัย'},
+  {r:'5.1',i:3,n:'เด็กหญิงดารุณี ครองมรกต'},{r:'5.1',i:4,n:'เด็กหญิงนิภาดา โกศลบารมี'},
+  {r:'5.1',i:5,n:'เด็กชายพีรพล แก้วพัชรพร'},{r:'5.1',i:6,n:'เด็กหญิงเอมิ'},
+  {r:'5.1',i:7,n:'เด็กหญิงกนกรัตน์ ทังสุรชัย'},{r:'5.1',i:8,n:'เด็กหญิงญาดา'},
+  {r:'5.1',i:9,n:'เด็กชายสุทิตย์ มาลาคีรีกุล'},{r:'5.1',i:10,n:'เด็กหญิงยุวดี ไพรแสงแก้ว'},
+  {r:'5.1',i:11,n:'เด็กหญิงอรทัย ไพรแสงแก้ว'},{r:'5.1',i:12,n:'เด็กหญิงอรพิชา เจ็ดก้าวมา'},
+  {r:'5.1',i:13,n:'เด็กชายภาคิน ดวงสกุลธรรม'},{r:'5.1',i:14,n:'เด็กหญิงคุนี'},
+  {r:'5.1',i:15,n:'เด็กชายทรายทราย'},{r:'5.1',i:16,n:'เด็กหญิงสุรีพร เจริญพันธ์โชค'},
+  {r:'5.1',i:17,n:'เด็กชายสุวิทย์ วิหคไพร'},{r:'5.1',i:18,n:'เด็กหญิงรักษ์พร'},
+  {r:'5.1',i:19,n:'เด็กหญิงดวงใจ คันธมาทน์งาม'},{r:'5.1',i:20,n:'เด็กชายดิเรก ไพรมุกดา'},
+  {r:'5.1',i:21,n:'เด็กชายสิปปภาส โชติรสสกุล'},{r:'5.1',i:22,n:'เด็กหญิงแพรวา'},
+  {r:'5.1',i:23,n:'เด็กชายปรีชา'},{r:'5.1',i:24,n:'เด็กหญิงยุวดี โชติรสสกุล'},
+  {r:'5.1',i:25,n:'เด็กชายวุฒิภัทร ไพรมุกดา'},{r:'5.1',i:26,n:'เด็กหญิงเพชรลดา ทังสุรชัย'},
+  {r:'5.1',i:27,n:'เด็กหญิงนันทิพร นราภัสสร'},{r:'5.1',i:28,n:'เด็กชายณรงค์ชัย ประกายน้ำ'},
+  {r:'5.1',i:29,n:'เด็กหญิงบะหมี่'},{r:'5.1',i:30,n:'เด็กหญิงน่อกิ๊กิ'},
+  {r:'5.1',i:31,n:'เด็กหญิงหน่อพอเซ'},{r:'5.1',i:32,n:'เด็กหญิงพอแกละเก่'},
+  {r:'5.1',i:33,n:'เด็กชายดิ๊โพ'},{r:'5.1',i:34,n:'เด็กหญิงน่อมึญอ'},
+  {r:'5.1',i:35,n:'นายณัฐดนัย'},{r:'5.1',i:36,n:'เด็กหญิงณัฐพร สมศศิภา'},
+  {r:'5.1',i:37,n:'เด็กหญิงกันย์สินี แก้วกุมารี'},
+  // ป.5/2
+  {r:'5.2',i:1,n:'เด็กชายทินกร'},{r:'5.2',i:2,n:'เด็กหญิงนันทิดา แสงฟ้าใส'},
+  {r:'5.2',i:3,n:'เด็กหญิงกิตติญา มานะคีรีกุล'},{r:'5.2',i:4,n:'เด็กหญิงทีระพร'},
+  {r:'5.2',i:5,n:'เด็กหญิงหน่อพอทู'},{r:'5.2',i:6,n:'เด็กหญิงแพรวา'},
+  {r:'5.2',i:7,n:'เด็กหญิงวิภาวดี'},{r:'5.2',i:8,n:'เด็กหญิงรินดา'},
+  {r:'5.2',i:9,n:'เด็กหญิงชลธิชา โกศลบารมี'},{r:'5.2',i:10,n:'เด็กหญิงสุดา สถิตย์สาละวิน'},
+  {r:'5.2',i:11,n:'เด็กชายเกรียงวุฒิ ไพรแสงแก้ว'},{r:'5.2',i:12,n:'เด็กหญิงประณาลี ขจรเดชวนา'},
+  {r:'5.2',i:13,n:'เด็กหญิงสโรชา'},{r:'5.2',i:14,n:'เด็กหญิงพรวลัย โกศลบารมี'},
+  {r:'5.2',i:15,n:'เด็กหญิงกะโย่พอ'},{r:'5.2',i:16,n:'เด็กชายสุวิทย์ ไพรแสงแก้ว'},
+  {r:'5.2',i:17,n:'เด็กชายธีรเทพ มานะคีรีกุล'},{r:'5.2',i:18,n:'เด็กชายจิรัฏฐ์ มานะคีรีกุล'},
+  {r:'5.2',i:19,n:'เด็กหญิงแพรวา'},{r:'5.2',i:20,n:'เด็กหญิงอรนุช พนากรชัย'},
+  {r:'5.2',i:21,n:'เด็กชายวาทิต ทัศนะงดงาม'},{r:'5.2',i:22,n:'นางสาวน่อเซเคะ'},
+  {r:'5.2',i:23,n:'เด็กชายจอโอะมึ'},{r:'5.2',i:24,n:'เด็กชายน่าโล่'},
+  {r:'5.2',i:25,n:'เด็กชายจ่อหนี่โท'},{r:'5.2',i:26,n:'เด็กหญิงเหม่แซะอู'},
+  {r:'5.2',i:27,n:'นายจอเซทู'},{r:'5.2',i:28,n:'นายวสันต์ พนากรชัย'},
+  {r:'5.2',i:29,n:'เด็กชายกะหนุ'},{r:'5.2',i:30,n:'เด็กชายเกอะปรือทู'},
+  {r:'5.2',i:31,n:'เด็กชายดิ๊โปะโละ'},{r:'5.2',i:32,n:'เด็กหญิงน่อพอซอ'},
+  {r:'5.2',i:33,n:'เด็กชายพงศกร โศจิอรุณ'},{r:'5.2',i:34,n:'เด็กหญิงหน่อเชอแอะ'},
+  {r:'5.2',i:35,n:'เด็กชายจิรายุ ฉลองโชคทวี'},{r:'5.2',i:36,n:'เด็กหญิงสุพรรณิการ์ นาคาม้วนหาง'},
+  {r:'5.2',i:37,n:'เด็กหญิงอนัญญา หงส์ทิพย์สุข'},{r:'5.2',i:38,n:'เด็กหญิงพรพิมล สมศศิภา'},
+  {r:'5.2',i:39,n:'เด็กชายพสธร'},
+  // ม.1
+  {r:'ม.1',i:1,n:'นายเตวิช แสงฟ้าใส'},{r:'ม.1',i:2,n:'นายดนุเดช เกิดกุนที'},
+  {r:'ม.1',i:3,n:'เด็กหญิงดารุณี ประกายน้ำ'},{r:'ม.1',i:4,n:'เด็กชายวีรากร โชติรสสกุล'},
+  {r:'ม.1',i:5,n:'เด็กชายอาทิตย์ ทังสุรชัย'},{r:'ม.1',i:6,n:'เด็กหญิงอาลิสา'},
+  {r:'ม.1',i:7,n:'เด็กหญิงชนิดา สุริยะวงศ์'},{r:'ม.1',i:8,n:'เด็กชายทินกร'},
+  {r:'ม.1',i:9,n:'เด็กหญิงจารวี วรางค์กรณ์ธาดา'},{r:'ม.1',i:10,n:'เด็กหญิงวรรณภา เก่งกุญชร'},
+  {r:'ม.1',i:11,n:'เด็กหญิงจุไรรัตน์ สกุณาเคียงดง'},{r:'ม.1',i:12,n:'เด็กหญิงอรดา บุญทวีคูณ'},
+  {r:'ม.1',i:13,n:'เด็กชายสิทธิพันธ์ ฟ้านภาแจ่ม'},{r:'ม.1',i:14,n:'เด็กหญิงศรัณย์พร ปัญญาจิตเกษม'},
+  {r:'ม.1',i:15,n:'เด็กชายธนภัทร เก่งกุญชร'},{r:'ม.1',i:16,n:'เด็กชายปิติ'},
+  {r:'ม.1',i:17,n:'เด็กหญิงพฤกษา เครือสาร'},{r:'ม.1',i:18,n:'เด็กหญิงชมพูนุช อิ่มเอมสวัสดิ์'},
+  {r:'ม.1',i:19,n:'เด็กหญิงลีลาวดี'},{r:'ม.1',i:20,n:'เด็กหญิงลลิตา'},
+  {r:'ม.1',i:21,n:'เด็กหญิงนิตา เก่งกุญชร'},{r:'ม.1',i:22,n:'เด็กชายปิยะ'},
+  {r:'ม.1',i:23,n:'เด็กหญิงฐิตาภา ใจหยัดยืน'},{r:'ม.1',i:24,n:'เด็กหญิงเพชรพลอย'},
+  {r:'ม.1',i:25,n:'เด็กหญิงตุลยา'},{r:'ม.1',i:26,n:'นายแสงเพชร นาคาม้วนหาง'},
+  {r:'ม.1',i:27,n:'เด็กหญิงเฟื่องฟ้า'},{r:'ม.1',i:28,n:'นางสาวการะเกด'},
+  {r:'ม.1',i:29,n:'เด็กหญิงนันทิวา นิ่มละออ'},{r:'ม.1',i:30,n:'เด็กชายสนธิ'},
+  {r:'ม.1',i:31,n:'เด็กหญิงจิดาภา กิตนิทัศน์'},{r:'ม.1',i:32,n:'เด็กหญิงนุชจิรา'},
+  {r:'ม.1',i:33,n:'เด็กหญิงจิณห์นิภา คีรีสุเรนทร์'},{r:'ม.1',i:34,n:'เด็กชายพิศาล ไพรวันไพศาล'},
+  {r:'ม.1',i:35,n:'นางสาวศศิกานต์ ธนเสรีธรรม'},{r:'ม.1',i:36,n:'นางสาวนิตยา สถิตย์สาละวิน'},
+  {r:'ม.1',i:37,n:'นายมาดี'},{r:'ม.1',i:38,n:'เด็กชายวรเดช ครองวิถี'},
+  {r:'ม.1',i:39,n:'เด็กหญิงภัทรวดี เกตุประจัน'},{r:'ม.1',i:40,n:'เด็กชายวีรวิชญ์ กันแย้ม'},
+  {r:'ม.1',i:41,n:'เด็กหญิงณิชนันท์ กิจการจรัส'},{r:'ม.1',i:42,n:'เด็กหญิงบ๊วยพอ'},
+  {r:'ม.1',i:43,n:'นายพาต่าย่อ'},{r:'ม.1',i:44,n:'เด็กหญิงนิลภา'},
+  {r:'ม.1',i:45,n:'เด็กหญิงนอลาซี'},
+];
+
+async function render() {
+  const room = document.getElementById('rm').value;
+  const q = document.getElementById('q').value.trim();
+  const grid = document.getElementById('grid');
+  const prog = document.getElementById('prog');
+
+  const list = ALL.filter(s =>
+    (!room || s.r === room) && (!q || s.n.includes(q))
+  );
+
+  document.getElementById('cnt').textContent = list.length + ' คน';
+
+  if (!list.length) {
+    grid.innerHTML = '<div class="empty">ไม่พบนักเรียน</div>';
+    prog.textContent = '';
+    return;
+  }
+
+  grid.innerHTML = list.map(s => {
+    const c = RC[s.r] || {bg:'#f0f0f0',tc:'#333'};
+    const short = s.n.replace(/^(เด็กหญิง|เด็กชาย|นาย|นางสาว|นาง)/,'');
+    return `<div class="card">
+      <span class="rm" style="background:${c.bg};color:${c.tc}">ป.${s.r==='ม.1'?'':s.r.replace('.','')}${s.r==='ม.1'?'ม.1':''} · ${s.i}</span>
+      <div class="qw" id="qw-${s.r}-${s.i}"></div>
+      <div class="nm">${short}</div>
+      <div class="sub">สแกนส่งงาน</div>
+    </div>`;
+  }).join('');
+
+  let done = 0;
+  for (const s of list) {
+    const wrap = document.getElementById('qw-' + s.r + '-' + s.i);
+    if (!wrap) continue;
+    try {
+      const canvas = document.createElement('canvas');
+      wrap.innerHTML = '';
+      wrap.appendChild(canvas);
+      await QRCode.toCanvas(canvas,
+        JSON.stringify({studentIdx: s.i-1, name: s.n, room: s.r, class: 'M1-Math'}),
+        {width:114, margin:1, color:{dark:'#000',light:'#fff'}, errorCorrectionLevel:'M'}
+      );
+    } catch(e) {
+      wrap.innerHTML = '<span style="font-size:10px;color:#999">error</span>';
+    }
+    done++;
+    if (done % 10 === 0 || done === list.length) {
+      prog.textContent = done < list.length ? `กำลังสร้าง QR... ${done}/${list.length}` : '';
+    }
+    await new Promise(r => setTimeout(r, 0));
+  }
+}
+
+render();
+</script>
+</body>
+</html>

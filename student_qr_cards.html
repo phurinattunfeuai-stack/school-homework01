@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QR Code นักเรียน</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#fff;--bg2:#f5f5f5;--bg3:#ebebeb;
+  --text:#1a1a1a;--text2:#666;--text3:#999;
+  --border:rgba(0,0,0,0.12);--border2:rgba(0,0,0,0.2);
+  --radius:8px;--radius-lg:12px;
+}
+@media(prefers-color-scheme:dark){
+  :root{--bg:#1e1e1e;--bg2:#272727;--bg3:#2f2f2f;--text:#f0f0f0;--text2:#aaa;--text3:#777;--border:rgba(255,255,255,0.1);--border2:rgba(255,255,255,0.2)}
+}
+body{font-family:'Sarabun',sans-serif;background:var(--bg3);color:var(--text);padding:14px}
+h2.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
+.top-bar{display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.top-bar h1{font-size:17px;font-weight:600;flex:1;min-width:120px}
+select,input[type=text]{padding:7px 12px;border:0.5px solid var(--border2);border-radius:var(--radius);font-size:14px;font-family:inherit;background:var(--bg);color:var(--text);outline:none}
+.search-wrap{position:relative;flex:1;min-width:140px}
+.search-wrap input{width:100%}
+button{padding:8px 14px;border-radius:var(--radius);border:0.5px solid var(--border2);cursor:pointer;font-size:13px;font-family:inherit;font-weight:600;background:var(--bg);color:var(--text)}
+.btn-print{background:#534ab7;color:#fff;border-color:#534ab7}
+.count-badge{background:var(--bg2);border:0.5px solid var(--border);border-radius:20px;padding:4px 12px;font-size:13px;color:var(--text2);white-space:nowrap}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px}
+.card{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:12px;display:flex;flex-direction:column;align-items:center;gap:7px}
+.card-room{font-size:11px;font-weight:600;padding:2px 10px;border-radius:20px}
+.card-name{font-size:13px;font-weight:500;text-align:center;color:var(--text);line-height:1.4}
+.card-sub{font-size:11px;color:var(--text3)}
+.qr-wrap{width:118px;height:118px;display:flex;align-items:center;justify-content:center;background:#fff;border-radius:6px;overflow:hidden}
+.qr-wrap canvas,.qr-wrap img{width:118px!important;height:118px!important}
+.empty{text-align:center;padding:40px;color:var(--text3);font-size:14px}
+.loading{font-size:12px;color:var(--text3);text-align:center;padding:6px 0}
+@media print{
+  body{background:#fff;padding:6px}
+  .top-bar,.no-print{display:none!important}
+  .grid{grid-template-columns:repeat(4,1fr);gap:6px}
+  .card{border:1px solid #ccc;break-inside:avoid;page-break-inside:avoid}
+  .qr-wrap{background:#fff}
+}
+</style>
+</head>
+<body>
+<h2 class="sr-only">QR Code ประจำตัวนักเรียน สำหรับสแกนรายงานการส่งงาน</h2>
+
+<div class="top-bar no-print">
+  <h1><i class="ti ti-qrcode"></i> QR Code นักเรียน</h1>
+  <div class="search-wrap">
+    <input type="text" id="search" placeholder="🔍 ค้นหาชื่อ..." oninput="renderCards()">
+  </div>
+  <select id="sel-room" onchange="renderCards()">
+    <option value="">ทุกห้อง</option>
+  </select>
+  <span class="count-badge" id="count-badge">0 คน</span>
+  <button class="btn-print no-print" onclick="window.print()"><i class="ti ti-printer"></i> พิมพ์</button>
+</div>
+
+<div id="grid" class="grid"></div>
+
+<!-- ใช้ QRCode.js ที่ยังใช้งานได้จริง (jsDelivr CDN) -->
+<script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+<script>
+// ── ข้อมูลนักเรียน ───────────────────────────────────────────────────
+const FALLBACK = {
+  'ม.1': [
+    'นายเตวิช แสงฟ้าใส','นายดนุเดช เกิดกุนที','เด็กหญิงดารุณี ประกายน้ำ',
+    'เด็กชายวีรากร โชติรสสกุล','เด็กชายอาทิตย์ ทังสุรชัย','เด็กหญิงอาลิสา',
+    'เด็กหญิงชนิดา สุริยะวงศ์','เด็กชายทินกร','เด็กหญิงจารวี วรางค์กรณ์ธาดา',
+    'เด็กหญิงวรรณภา เก่งกุญชร','เด็กหญิงจุไรรัตน์ สกุณาเคียงดง','เด็กหญิงอรดา บุญทวีคูณ',
+    'เด็กชายสิทธิพันธ์ ฟ้านภาแจ่ม','เด็กหญิงศรัณย์พร ปัญญาจิตเกษม','เด็กชายธนภัทร เก่งกุญชร',
+    'เด็กชายปิติ','เด็กหญิงพฤกษา เครือสาร','เด็กหญิงชมพูนุช อิ่มเอมสวัสดิ์',
+    'เด็กหญิงลีลาวดี','เด็กหญิงลลิตา','เด็กหญิงนิตา เก่งกุญชร',
+    'เด็กชายปิยะ','เด็กหญิงฐิตาภา ใจหยัดยืน','เด็กหญิงเพชรพลอย',
+    'เด็กหญิงตุลยา','นายแสงเพชร นาคาม้วนหาง','เด็กหญิงเฟื่องฟ้า',
+    'นางสาวการะเกด','เด็กหญิงนันทิวา นิ่มละออ','เด็กชายสนธิ',
+    'เด็กหญิงจิดาภา กิตนิทัศน์','เด็กหญิงนุชจิรา','เด็กหญิงจิณห์นิภา คีรีสุเรนทร์',
+    'เด็กชายพิศาล ไพรวันไพศาล','นางสาวศศิกานต์ ธนเสรีธรรม','นางสาวนิตยา สถิตย์สาละวิน',
+    'นายมาดี','เด็กชายวรเดช ครองวิถี','เด็กหญิงภัทรวดี เกตุประจัน',
+    'เด็กชายวีรวิชญ์ กันแย้ม','เด็กหญิงณิชนันท์ กิจการจรัส','เด็กหญิงบ๊วยพอ',
+    'นายพาต่าย่อ','เด็กหญิงนิลภา','เด็กหญิงนอลาซี'
+  ],
+  'ป.4/1': ['เด็กหญิงซูหลี วงษ์ธีรธรรม','เด็กหญิงสุภาพร','เด็กหญิงสุธิมา สิงห์ทุ่งเสือ','เด็กหญิงวัลลิญา ไพรมุกดา','เด็กหญิงวราพร ถาวรพิพัฒน์กุล','เด็กหญิงแพรวพราว','เด็กหญิงปริยกร เก่งกุญชร','เด็กหญิงนันทิชา','เด็กหญิงทัดดาว สนธิพรรณ','เด็กหญิงดวงนภา ประกายน้ำ','เด็กหญิงจารุภา โชติรสสกุล','เด็กหญิงเกวลี พิมลศรทอง','เด็กชายศรัณยู มหาตมะคีรี','เด็กชายศรชัย มารยาศรี','เด็กชายวุฒินันท์ ใจเกลียว','เด็กชายฤทธิไกร ใจหยัดยืน','เด็กชายพงศกร โชติรสสกุล','เด็กชายประวิทย์ มหาตมะคีรี','เด็กชายก้องภพ พิมลศรทอง','เด็กชายกษิดิส แสนเกษตรกร','เด็กชายกมล','เด็กหญิงธนพร','เด็กหญิงเนาะชากุ','เด็กหญิงนิตา','เด็กชายสุภทัต ภูมิรินทร์พลอย','เด็กหญิงจันทร์จิรา วงศ์เจริญ','เด็กชายพงษ์เทพ วรรณวิลาศ','เด็กหญิงฉายสุดา ยุพาสกุล'],
+  'ป.4/2': ['เด็กหญิงสุดาพร','เด็กหญิงอรจิรา รักเผ่าไทย','เด็กหญิงอรจิรา บุญทวีคูณ','เด็กหญิงวริศรา ไพรมุกดา','เด็กหญิงวนิดา โชติรสสกุล','เด็กหญิงพศิกา เก่งกุญชร','เด็กหญิงปฐมพร มณีประกายแก้ว','เด็กหญิงขวัญทิพย์ วรางค์กรณ์ธาดา','เด็กหญิงกิ่งฟ้า พงศ์พนาไพรดอน','เด็กหญิงกัญญารัตน์','เด็กหญิงกัณฐมณี ปัญญาจิตเกษม','เด็กหญิงกมลเนตร เอกอุดมรักษ์','เด็กชายเอกชัย','เด็กชายอาทิตย์ เก่งกุญชร','เด็กชายพีรวัส สิงห์สล้าง','เด็กชายพลาโซซอ','เด็กชายพรชัย ธนเสรีธรรม','เด็กชายทัตชน ไพรมุกดา','เด็กชายต่าบิ้บิ้','เด็กชายณัฐวุฒิ','เด็กชายฉลองชัย อติโชคกุล','เด็กชายกิตติศักดิ์ คีรีสุเรนทร์','เด็กชายประยุทธ์ มหาตมะคีรี','เด็กชายแอ๊ะตามอ','เด็กชายซะลีคูเวะ','เด็กหญิงลลิตา','เด็กชายกุลกิตต์ วงษ์วิชุดา','เด็กชายณรงค์ชัย วงษ์วิชุดา','เด็กชายพาจอวี','เด็กชายอัศนี'],
+  'ป.5/1': ['เด็กชายวิทยา พลังพร','เด็กชายศรชัย','เด็กหญิงดารุณี ครองมรกต','เด็กหญิงนิภาดา โกศลบารมี','เด็กชายพีรพล แก้วพัชรพร','เด็กหญิงเอมิ','เด็กหญิงกนกรัตน์ ทังสุรชัย','เด็กหญิงญาดา','เด็กชายสุทิตย์ มาลาคีรีกุล','เด็กหญิงยุวดี ไพรแสงแก้ว','เด็กหญิงอรทัย ไพรแสงแก้ว','เด็กหญิงอรพิชา เจ็ดก้าวมา','เด็กชายภาคิน ดวงสกุลธรรม','เด็กหญิงคุนี','เด็กชายทรายทราย','เด็กหญิงสุรีพร เจริญพันธ์โชค','เด็กชายสุวิทย์ วิหคไพร','เด็กหญิงรักษ์พร','เด็กหญิงดวงใจ คันธมาทน์งาม','เด็กชายดิเรก ไพรมุกดา','เด็กชายสิปปภาส โชติรสสกุล','เด็กหญิงแพรวา','เด็กชายปรีชา','เด็กหญิงยุวดี โชติรสสกุล','เด็กชายวุฒิภัทร ไพรมุกดา','เด็กหญิงเพชรลดา ทังสุรชัย','เด็กหญิงนันทิพร นราภัสสร','เด็กชายณรงค์ชัย ประกายน้ำ'],
+  'ป.5/2': ['เด็กชายทินกร','เด็กหญิงนันทิดา แสงฟ้าใส','เด็กหญิงกิตติญา มานะคีรีกุล','เด็กหญิงทีระพร','เด็กหญิงชลธิชา โกศลบารมี','เด็กหญิงสุดา สถิตย์สาละวิน','เด็กชายเกรียงวุฒิ ไพรแสงแก้ว','เด็กหญิงประณาลี ขจรเดชวนา','เด็กหญิงพรวลัย โกศลบารมี','เด็กชายสุวิทย์ ไพรแสงแก้ว','เด็กชายธีรเทพ มานะคีรีกุล','เด็กชายจิรัฏฐ์ มานะคีรีกุล','เด็กหญิงอรนุช พนากรชัย','เด็กชายวาทิต ทัศนะงดงาม','เด็กชายจิรายุ ฉลองโชคทวี','เด็กหญิงสุพรรณิการ์ นาคาม้วนหาง','เด็กหญิงอนัญญา หงส์ทิพย์สุข','เด็กหญิงพรพิมล สมศศิภา']
+};
+
+const ROOM_COLORS = {
+  'ม.1':   {bg:'#e6f1fb', tc:'#0c447c'},
+  'ป.4/1': {bg:'#eeedfe', tc:'#3c3489'},
+  'ป.4/2': {bg:'#e1f5ee', tc:'#085041'},
+  'ป.5/1': {bg:'#faeeda', tc:'#633806'},
+  'ป.5/2': {bg:'#faece7', tc:'#712b13'},
+};
+
+let allStudents = [];
+
+function init() {
+  // สร้างรายชื่อนักเรียนทั้งหมด
+  const sel = document.getElementById('sel-room');
+  Object.keys(FALLBACK).forEach(room => {
+    const opt = document.createElement('option');
+    opt.value = room; opt.textContent = room;
+    sel.appendChild(opt);
+    FALLBACK[room].forEach((name, i) => {
+      allStudents.push({ id: room + '_' + i, name, room, idx: i + 1 });
+    });
+  });
+  renderCards();
+}
+
+async function renderCards() {
+  const room = document.getElementById('sel-room').value;
+  const q    = document.getElementById('search').value.trim();
+  const grid = document.getElementById('grid');
+
+  const filtered = allStudents.filter(s => {
+    if (room && s.room !== room) return false;
+    if (q && !s.name.includes(q)) return false;
+    return true;
+  });
+
+  document.getElementById('count-badge').textContent = filtered.length + ' คน';
+
+  if (!filtered.length) {
+    grid.innerHTML = '<div class="empty">ไม่พบนักเรียน</div>';
+    return;
+  }
+
+  // สร้าง card ก่อน (ไม่มี QR ยัง)
+  grid.innerHTML = filtered.map(s => {
+    const c = ROOM_COLORS[s.room] || {bg:'#f0f0f0', tc:'#333'};
+    const shortName = s.name.replace(/^(เด็กหญิง|เด็กชาย|นาย|นางสาว|นาง)/,'');
+    return `<div class="card">
+      <span class="card-room" style="background:${c.bg};color:${c.tc}">${s.room} · เลขที่ ${s.idx}</span>
+      <div class="qr-wrap" id="qr-${s.id}">
+        <div class="loading">กำลังโหลด...</div>
+      </div>
+      <div class="card-name">${shortName}</div>
+      <div class="card-sub">สแกนเพื่อส่งงาน</div>
+    </div>`;
+  }).join('');
+
+  // สร้าง QR ทีละตัวแบบ async ไม่บล็อก UI
+  for (const s of filtered) {
+    const wrap = document.getElementById('qr-' + s.id);
+    if (!wrap) continue;
+    const payload = JSON.stringify({
+      studentIdx: s.idx - 1,
+      name: s.name,
+      room: s.room,
+      class: 'M1-Math'
+    });
+    try {
+      const canvas = document.createElement('canvas');
+      wrap.innerHTML = '';
+      wrap.appendChild(canvas);
+      await QRCode.toCanvas(canvas, payload, {
+        width: 118,
+        margin: 1,
+        color: { dark: '#000000', light: '#ffffff' },
+        errorCorrectionLevel: 'M'
+      });
+    } catch(e) {
+      wrap.innerHTML = '<div style="font-size:10px;color:#999;text-align:center;padding:4px">QR error</div>';
+      console.error('QR error for', s.name, e);
+    }
+    // yield to browser เพื่อให้ render ได้
+    await new Promise(r => setTimeout(r, 0));
+  }
+}
+
+init();
+</script>
+</body>
+</html>
